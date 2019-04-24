@@ -1,0 +1,204 @@
+---
+title: "IFNbeta LPS IL6 CD4 counts microbiome family"
+author: "Guannan Shen"
+date: "April 23, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+
+```{r libs, echo=FALSE }
+## set up workspace
+rm(list = ls())
+
+library(knitr)
+library(tidyverse)
+library(SmCCNet)
+library(mixOmics)
+library(r.jive)
+library(openxlsx)
+library(stats)
+library(readxl)
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+## not in function
+'%nin%' <- Negate('%in%')
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# ls()
+# slotNames(x)
+# getSlots(x)
+
+```
+
+# Omics Integration and Network Analysis
+
+## Data
+Clinical parameters: IL-6 (pg/ml), LPS (pg/ml) and CD4 count (cells/ul).  
+Family level microbiome data, filtered via tidi_MIBI.  
+RNAseq data of IFN-Beta genes list, TMM normalized.  
+27 subjects in common.  
+423 genes and 53 families. 
+
+```{r importdata}
+## clinical data 
+## IL6 lps cd4_counts
+clin_micro <- read.xlsx("clin_microbiome.xlsx")
+
+## rna seq data 
+beta <- read.table("genesbeta", header = T)
+colnames(beta)
+
+# test if the Symbols are unique
+nrow(beta) == length(table(beta[,2]))
+tmm <- read.xlsx("TMM_normalized_counts.xlsx")
+tmm_beta <- data.frame(tmm) %>% dplyr::filter(Gene_ID %in% beta$Gene_ID ) %>% 
+           dplyr::select(-Gene_ID) %>% 
+                 column_to_rownames("Symbol") %>% t %>% as.data.frame
+
+# change the ID
+tmm_beta_id <- c(gsub("C", "MIHIV", row.names(tmm_beta)  [1:13]  ),
+                gsub( "H", "MIHIV", row.names(tmm_beta)  [14:32] ) )
+sum(tmm_beta_id %in% clin_micro$ID)
+row.names( tmm_beta) <- tmm_beta_id
+
+# family level microbiome data
+fam_tidi <- read.csv('family_mibiset.csv')
+fam_clr <- data.frame(fam_tidi) %>% dplyr::select(Lib, Taxa, clr) %>%
+            spread(., Taxa, clr) %>% dplyr::mutate(ID = gsub( "B", "",  .$Lib)) %>%
+             dplyr::select(-Lib) %>%  dplyr::select(ID, everything())
+# list of common subject
+sum(fam_clr$ID[fam_clr$ID %in% tmm_beta_id] %nin%
+tmm_beta_id[tmm_beta_id %in%  fam_clr$ID])
+
+# ids
+IDs <- fam_clr$ID[fam_clr$ID %in% tmm_beta_id]
+############## SmCCNet input #################
+# subject at rows, feature at columns 
+# filter by ID
+# mean 0, unit variance 
+# One way to normalize variables in R is to use the scale function
+## clin
+clin_27 <- data.frame(clin_micro) %>%  dplyr::filter(ID %in% IDs) 
+
+il6_cd4_lps <- cbind(clin_27[, 1:4], data.frame(apply(clin_27[,c(5:6, 11)], 2, scale)) )
+
+#### microbiome 
+fam_sm <- fam_clr %>% dplyr::filter(ID %in% IDs) %>% column_to_rownames("ID")
+fam_scale <-  data.frame(apply(fam_sm, 2, scale))
+fam_scale$ID <- row.names(fam_sm)
+
+
+## tmm
+
+beta_tmm_scale <- data.frame(apply(tmm_beta[row.names(tmm_beta) %in% IDs ,], 2, scale))
+beta_tmm_scale$ID <- row.names(tmm_beta)[row.names(tmm_beta) %in% IDs]
+
+## merge dataset
+data <- merge( fam_scale, 
+merge( il6_cd4_lps,beta_tmm_scale, by = "ID" ),
+by = "ID")
+
+```
+
+## Methods
+1. SmCCNet.  
+2. mixOmics.  
+3. r.jive.  
+
+```{r smccnet}
+# fam_sm, 53 families
+# clinical data data[, 55:60], gender, age, hiv, cd4, il6, lps
+# tmm_beta, 423 genes 
+dim(data)
+microbiome <- data[, 2:54]
+#  clin
+# il6
+il6 <- data[, 59]
+#
+gene <- data[, 61:483]
+# n for p1 and all names
+n <-  ncol(gene)
+names <- c(colnames(gene), colnames(microbiome))
+# corre
+x <- cbind(data[, 61:483], data[, 2:54])
+corr <- cor(x)
+
+#######  Unweighted SmCCA
+# SubsamplingNum Number of feature subsamples. Default is 1000. Larger number leads to more
+# accurate results, but at a higher cost.
+# this sample size, 27, the paper use 4-fold 
+set.seed(123)
+W1 <- getRobustPseudoWeights(gene, microbiome, Trait = il6, Lambda1 = 0.01,
+      Lambda2 = 0.01, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 2000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = n, FeatureLabel = names)
+modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 1 - 0.1^10, PlotTree = TRUE)
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
+## other
+cd4 <- data[, 58]
+lps <- data[, 60]
+# c("cd4", "lps"), as.name(), eval()
+
+W1 <- getRobustPseudoWeights(gene, microbiome, Trait = cd4, Lambda1 = 0.01,
+      Lambda2 = 0.01, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 2000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = n, FeatureLabel = names)
+modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 1 - 0.1^10, PlotTree = TRUE)
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
+
+W1 <- getRobustPseudoWeights(gene, microbiome, Trait = lps, Lambda1 = 0.01,
+      Lambda2 = 0.01, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 2000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = n, FeatureLabel = names)
+modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 1 - 0.1^10, PlotTree = TRUE)
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
+
+```
+
+
+## Questions
+1. Weighted SmCCA might be better, need to define the weights.  
+2. Lasso penalty, CV to decide the Lambdas.  
+3. All the inputs, TMM normalized counts, centered log ratio transform of microbiome relative abundance and phenos were scaled to mean 0, unit variance.   
+4. Set the random seed, should the results be robust to random seed?  
+5. The canonical correlation weight matrix are mostly zeros.  
