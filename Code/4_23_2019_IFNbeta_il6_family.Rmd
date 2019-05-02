@@ -135,6 +135,8 @@ data <- merge( fam_scale,
 merge( il6_cd4_lps,beta_tmm_scale, by = "ID" ),
 by = "ID")
 
+as.vector(data$ID)
+
 ```
 
 ## Methods
