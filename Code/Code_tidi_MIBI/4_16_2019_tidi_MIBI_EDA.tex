@@ -1,0 +1,532 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={tidi\_MIBI EDA},
+            pdfauthor={Guannan Shen},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{tidi\_MIBI EDA}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Guannan Shen}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+      \predate{\centering\large\emph}
+  \postdate{\par}
+    \date{April 16, 2019}
+
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{5}
+\tableofcontents
+}
+\begin{verbatim}
+## [1] "/home/guanshim/Documents/gitlab/tidi_MIBI/Code"
+\end{verbatim}
+
+\subsection{Data}\label{data}
+
+\begin{verbatim}
+## Loading required package: pacman
+\end{verbatim}
+
+\begin{longtable}[]{@{}l@{}}
+\toprule
+Levels of Microbiome Data\tabularnewline
+\midrule
+\endhead
+Phylum\tabularnewline
+Class\tabularnewline
+Order\tabularnewline
+Family\tabularnewline
+Genus\tabularnewline
+Species\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subsubsection{Family Level Microbiome and Clinical
+Data}\label{family-level-microbiome-and-clinical-data}
+
+\begin{longtable}[]{@{}llllll@{}}
+\toprule
+V1 & V2 & V3 & V4 & V5 & V6\tabularnewline
+\midrule
+\endhead
+OTU\_Name & MIHIV119B & MIHIV124B & MIHIV132B & MIHIV138B &
+MIHIV154B\tabularnewline
+root & 31995 & 36683 & 81909 & 132706 & 108756\tabularnewline
+Bacteria/Firmicutes/Clostridia/Clostridiales/Lachnospiraceae & 17076 &
+47 & 76 & 36324 & 25508\tabularnewline
+Bacteria/Bacteroidetes/Bacteroidia/Bacteroidales/Bacteroidaceae & 3029 &
+49 & 32 & 34482 & 36017\tabularnewline
+Bacteria/Bacteroidetes/Bacteroidia/Bacteroidales/Prevotellaceae & 1 & 41
+& 453 & 4 & 17\tabularnewline
+Bacteria/Firmicutes/Clostridia/Clostridiales/Ruminococcaceae & 3401 & 33
+& 17 & 18636 & 7270\tabularnewline
+\bottomrule
+\end{longtable}
+
+\begin{longtable}[]{@{}lllllrrrrl@{}}
+\toprule
+Lib & diagnosis & sample\_type & Sex & sex\_dx & Age & Decade & Over50 &
+Over40 & BMI\tabularnewline
+\midrule
+\endhead
+MIHIV119B & Neg & Biop & M & M\_Neg & 27 & 2 & 0 & 0 & OV\tabularnewline
+MIHIV138B & Neg & Biop & M & M\_Neg & 29 & 2 & 0 & 0 & N\tabularnewline
+MIHIV178B & Neg & Biop & M & M\_Neg & 33 & 3 & 0 & 0 & OV\tabularnewline
+MIHIV255B & Neg & Biop & M & M\_Neg & 34 & 3 & 0 & 0 & OB\tabularnewline
+MIHIV278B & Neg & Biop & M & M\_Neg & 23 & 2 & 0 & 0 & na\tabularnewline
+MIHIV361B & Neg & Biop & F & F\_Neg & 33 & 3 & 0 & 0 & N\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subsubsection{Filtering the Microbiome
+Data}\label{filtering-the-microbiome-data}
+
+Prevalence cutoff: 5\% (i.e., at least 5\% of libaries must be
+represented to keep OTU)\\
+Relative abundance cutoff: 1\% (i.e., at least one library must have RA
+\textgreater{} 1\% to keep OTU).
+
+\begin{verbatim}
+## No "Unclassified" category found: data unchangedPrevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU)
+## Created new 'Other' Taxa in OTU table.
+## Collapsed 3 OTUs to 'Other' in OTU table.
+## Converted 39 counts to 'Other' in OTU table.
+## Remaining OTUs: 15  (Including 'Other').
+## 
+## Relative abundance cutoff: 1 % (i.e., at least one library must have RA > 1 % to keep OTU).
+## Created new "Other" category.
+## Collapsed 5 OTUs to "Other" otu category.
+## Converted 2125 counts to "Other" otu category.
+## Remaining OTUS: 11  (Including "Other").
+## 
+## Found "Unclassified" category in input data
+## Created new "Other" category.
+## Converted 36185 counts to "Other" otu category.
+## Remaining OTUS: 66  (Including "Other").
+## 
+## Prevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU)
+## Found 'Other' category in input data.
+## Collapsed 16 OTUs to 'Other' in OTU table.
+## Converted 552 counts to 'Other' in OTU table.
+## Remaining OTUs: 50  (Including 'Other').
+## 
+## Relative abundance cutoff: 1 % (i.e., at least one library must have RA > 1 % to keep OTU).
+## Found "Other" category in input data.
+## Collapsed 18 OTUs to "Other" otu category.
+## Converted 11541 counts to "Other" otu category.
+## Remaining OTUS: 32  (Including "Other").
+## 
+## Found "Unclassified" category in input data
+## Created new "Other" category.
+## Converted 36185 counts to "Other" otu category.
+## Remaining OTUS: 131  (Including "Other").
+## 
+## Prevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU)
+## Found 'Other' category in input data.
+## Collapsed 30 OTUs to 'Other' in OTU table.
+## Converted 756 counts to 'Other' in OTU table.
+## Remaining OTUs: 101  (Including 'Other').
+## 
+## Relative abundance cutoff: 1 % (i.e., at least one library must have RA > 1 % to keep OTU).
+## Found "Other" category in input data.
+## Collapsed 48 OTUs to "Other" otu category.
+## Converted 21423 counts to "Other" otu category.
+## Remaining OTUS: 53  (Including "Other").
+## 
+## Found "Unclassified" category in input data
+## Created new "Other" category.
+## Converted 36185 counts to "Other" otu category.
+## Remaining OTUS: 270  (Including "Other").
+## 
+## Prevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU)
+## Found 'Other' category in input data.
+## Collapsed 64 OTUs to 'Other' in OTU table.
+## Converted 1339 counts to 'Other' in OTU table.
+## Remaining OTUs: 206  (Including 'Other').
+## 
+## Relative abundance cutoff: 1 % (i.e., at least one library must have RA > 1 % to keep OTU).
+## Found "Other" category in input data.
+## Collapsed 122 OTUs to "Other" otu category.
+## Converted 44812 counts to "Other" otu category.
+## Remaining OTUS: 84  (Including "Other").
+## 
+## Contains 31 subjects/libraries from Explicet OTU file.
+\end{verbatim}
+
+\subsubsection{Combined Dataset}\label{combined-dataset}
+
+Combined Dataset contains microbiome data at Phylum, Order, Family and
+Genus levels, together with the clinical parameters.\\
+Particularly, \emph{Lib} is the donor, library; \emph{Total} is the
+library size, the total counts per donor; \emph{cts} is the counts per
+the library and taxa combination; \emph{clr} is the centered log-ratio
+transformation of the relative abundance; \emph{per} is the relative
+abundance percentage. \emph{diagnosis} is HIV-positive or HIV-negative.
+
+\begin{verbatim}
+## [1] 5580  115
+\end{verbatim}
+
+\begin{longtable}[]{@{}lllrrrrrllllrrr@{}}
+\toprule
+Rank & Lib & Taxa & Total & bin & cts & clr & per & diagnosis &
+sample\_type & Sex & sex\_dx & Age & Decade & Over50\tabularnewline
+\midrule
+\endhead
+Phylum & MIHIV119B & Firmicutes & 31995 & 1 & 21630 & 10.612186 &
+67.604313 & Neg & Biop & M & M\_Neg & 27 & 2 & 0\tabularnewline
+Phylum & MIHIV124B & Firmicutes & 36683 & 1 & 21727 & 12.865424 &
+59.229071 & Pos & Biop & M & M\_Pos & 48 & 4 & 0\tabularnewline
+Phylum & MIHIV132B & Firmicutes & 81909 & 1 & 2881 & 7.706506 & 3.517318
+& Pos & Biop & M & M\_Pos & 25 & 2 & 0\tabularnewline
+Phylum & MIHIV138B & Firmicutes & 132706 & 1 & 87480 & 14.171150 &
+65.920154 & Neg & Biop & M & M\_Neg & 29 & 2 & 0\tabularnewline
+Phylum & MIHIV154B & Firmicutes & 108756 & 1 & 58615 & 14.885815 &
+53.895877 & Pos & Biop & F & F\_Pos & 58 & 5 & 1\tabularnewline
+Phylum & MIHIV178B & Firmicutes & 105542 & 1 & 43326 & 14.613114 &
+41.050956 & Neg & Biop & M & M\_Neg & 33 & 3 & 0\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subsection{Subset of Data for Downstream
+Analysis}\label{subset-of-data-for-downstream-analysis}
+
+Using only the family level data.
+
+\begin{verbatim}
+## Found "Unclassified" category in input data
+## Created new "Other" category.
+## Converted 58364 counts to "Other" otu category.
+## Remaining OTUS: 53  (Including "Other").
+## 
+## Prevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU)
+## No OTUs with prevalence < 5Relative abundance cutoff: 1 % (i.e., at least one library must have RA > 1 % to keep OTU).
+## No OTUs with max relative abundance < 1 % so no "Other" category created.
+\end{verbatim}
+
+\begin{longtable}[]{@{}lllrrrrrllllrrr@{}}
+\toprule
+Rank & Lib & Taxa & Total & bin & cts & clr & per & diagnosis &
+sample\_type & Sex & sex\_dx & Age & Decade & Over50\tabularnewline
+\midrule
+\endhead
+Family & MIHIV119B & Actin:Actin:Actinomycetaceae & 31995 & 0 & 0 &
+-7.385511 & 0 & Neg & Biop & M & M\_Neg & 27 & 2 & 0\tabularnewline
+Family & MIHIV124B & Actin:Actin:Actinomycetaceae & 36683 & 0 & 0 &
+-10.471096 & 0 & Pos & Biop & M & M\_Pos & 48 & 4 & 0\tabularnewline
+Family & MIHIV132B & Actin:Actin:Actinomycetaceae & 81909 & 0 & 0 &
+-8.933086 & 0 & Pos & Biop & M & M\_Pos & 25 & 2 & 0\tabularnewline
+Family & MIHIV138B & Actin:Actin:Actinomycetaceae & 132706 & 0 & 0 &
+-9.194577 & 0 & Neg & Biop & M & M\_Neg & 29 & 2 & 0\tabularnewline
+Family & MIHIV154B & Actin:Actin:Actinomycetaceae & 108756 & 0 & 0 &
+-9.631099 & 0 & Pos & Biop & F & F\_Pos & 58 & 5 & 1\tabularnewline
+Family & MIHIV178B & Actin:Actin:Actinomycetaceae & 105542 & 0 & 0 &
+-8.426626 & 0 & Neg & Biop & M & M\_Neg & 33 & 3 & 0\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subsubsection{Alpha and Beta
+Diversities}\label{alpha-and-beta-diversities}
+
+We can calculate the alpha and beta diversities of our sample set as
+well using the functions \emph{Alpha\_Div} and \emph{Beta\_Div},
+respectively.
+
+\emph{Alpha\_Div} calculates the Sobs, Chao1, Goods, ShannonE, ShannonH,
+and SimpsonD alpha diversities and attaches them as columns to the
+original tidy\_MIBI set given. It can handle any combination of taxa
+levels, and will calculate them all separately. The \emph{iter} argument
+is the number of bootstrap iterations used in the calculations. Warning:
+this can take several minutes to run.
+
+\emph{Beta\_Div} calculates the Bray-Curtis and Morisita-Horn beta
+diversities. It requires you to specify the rank of taxa calculated, and
+will return the two beta diversity matrices in a list.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{## Alpha Diversity}
+\NormalTok{all_fam_alpha <-}\StringTok{ }\KeywordTok{Alpha_Div}\NormalTok{(all_fam, }\DataTypeTok{rank =} \StringTok{"Family"}\NormalTok{) ## Not run for time}
+\NormalTok{all_fam_alpha}
+
+\NormalTok{## Beta Diversity}
+\NormalTok{## vegdist \{vegan\}}
+\NormalTok{all_fam_beta <-}\StringTok{ }\KeywordTok{Beta_Div}\NormalTok{(all_fam, }\DataTypeTok{rank =} \StringTok{"Family"}\NormalTok{)}
+\CommentTok{# all_fam_beta}
+
+\CommentTok{# all_fam_beta$MH ## Morisita-Horn}
+\CommentTok{# all_fam_beta$BC ## Bray-Curtis }
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{EDA with Bar Chart}\label{eda-with-bar-chart}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{all_fam }\OperatorTok{%>%}\StringTok{ }\KeywordTok{NB_Bars}\NormalTok{(diagnosis,                ## Covariate of interest}
+                   \DataTypeTok{top_taxa =} \DecValTok{10}\NormalTok{,         ## How many named taxa we want}
+                   \DataTypeTok{RA =} \DecValTok{0}\NormalTok{,               ## Only need one of top_taxa / RA specified}
+                   \DataTypeTok{specific_taxa =} \OtherTok{NULL}\NormalTok{, ## No specific taxa of interest}
+                   \DataTypeTok{xlab =} \StringTok{"HIV Status"}\NormalTok{, }\DataTypeTok{main =} \StringTok{"Title"}\NormalTok{, }\DataTypeTok{subtitle =} \StringTok{"Sub"}\NormalTok{) ## Labels}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Negative Binomial Models}\label{negative-binomial-models}
+
+It is standard to model the relative abundance of each taxa using a
+negative binomial distribution. The function \emph{NB\_mods} will create
+negative binomial models for each taxa within a specified rank using the
+observed counts and the Total as an offset. It uses \emph{glm.nb} from
+the \emph{MASS} package to fit these models.
+
+\emph{NB\_mods} will take each variable you specify as a new term to add
+into the model. For instance, if we include \emph{diagnosis, Age, Sex},
+the function will run the model
+\[log(\hat{cts}) = \beta_0  + \beta_1 diagnosis + \beta_2 Age + \beta_3 Sex + log(Total).\]
+You can also include interaction terms (such as Age*Sex) as you can with
+any other model.
+
+25 taxa converged. 28 taxa did not converge.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{## run in a seperate r script is fast  }
+\KeywordTok{dim}\NormalTok{(all_fam)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1643   60
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{nb_fam <-}\StringTok{ }\NormalTok{all_fam }\OperatorTok{%>%}\StringTok{      }\NormalTok{## tidy_MIBI set}
+\StringTok{  }\KeywordTok{NB_mods}\NormalTok{(}\DataTypeTok{rank =} \StringTok{"Family"}\NormalTok{, ## Rank of taxa we want to model}
+\NormalTok{          diagnosis, Age, Sex       ## The covariates in our model (Group + EWG)}
+\NormalTok{          )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 25 taxa converged.
+## 28 taxa did not converge.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{                           ## If we wanted the covariates to be Group+EWG+Group*EWG}
+\NormalTok{                           ## we could just input Group*EWG in the covariate spot.}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# load( }
+\CommentTok{#      file = "C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/DataProcessed/nb_model/nb_fam_diagnosis_age_sex.RData" )}
+
+\NormalTok{nb_fam}\OperatorTok{$}\NormalTok{Convergent_Summary }\OperatorTok{%>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(Coef }\OperatorTok{==}\StringTok{ "diagnosisPos"}\NormalTok{, FDR_Pval }\OperatorTok{<}\StringTok{ }\FloatTok{0.05}\NormalTok{ ) }\OperatorTok{%>%}\StringTok{ }\KeywordTok{arrange}\NormalTok{(P_val) }\OperatorTok{%>%}\StringTok{ }\NormalTok{kable}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}llrlrrr@{}}
+\toprule
+Taxa & Coef & Beta & CI & Z & P\_val & FDR\_Pval\tabularnewline
+\midrule
+\endhead
+Spiro:Spiro:Brachyspiraceae & diagnosisPos & 0.8560718 & (0.8062,
+0.9063) & 33.5440 & 0.0000 & 0.0000\tabularnewline
+Prote:Gamma:Xanthomonadaceae & diagnosisPos & 2.6489268 & (1.1732,
+4.0606) & 3.6596 & 0.0003 & 0.0015\tabularnewline
+Prote:Gamma:Moraxellaceae & diagnosisPos & 1.2557366 & (0.3371, 2.1336)
+& 3.2107 & 0.0013 & 0.0060\tabularnewline
+Prote:Alpha:Rhodospirillaceae & diagnosisPos & -2.7720809 & (-5.8443,
+-0.3994) & -2.6118 & 0.0090 & 0.0346\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subsubsection{Stacked Bar Charts}\label{stacked-bar-charts}
+
+Stacked bar charts of taxa RA is a very useful visualization for
+microbiome research. We have created a function that will calculate the
+estimated RA of all taxa based on the convergent models. This gives us
+the ability to visualize stacked bar charts of RA while controlling for
+other variables in the model. For instance, if our model is
+\[log(\hat{cts}) = \beta_0  + \beta_1 diagnosis + \beta_2 Age + \beta_3 Sex + log(Total)\]
+we can visualize the estimated differences in RA among different groups
+while holding Age and Sex constant.
+
+The function \emph{NB\_Bars} will create these stacked bar charts based
+on the output of the \emph{NB\_mods} function. It requires the name of a
+covariate in your model and can create plots based on main effects or
+interactions. If a continuous variable is one of the supplied
+covariates, \emph{NB\_Bars} requires a min and max value to plug into
+the models for estimation.
+
+\emph{NB\_Bars} gives you the ability to control how taxa are chosen to
+be named and plotted or aggregated into thYou can specify how many taxa
+will be named and used in the stacked bar charts using \emph{top\_taxa}.
+This function will take X taxa with the highest RA and put everything
+else into the ``Other'' category. You can also specify the \emph{RA}
+option and it will take all taxa below the RA cutoff you set and put it
+into the ``Other'' category. If a particular taxa is of interest you can
+use \emph{specific\_taxa} to pull any taxa out of the ``Other'' category
+if it doesn't meet the bar set by either \emph{top\_taxa} or \emph{RA}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{nb_fam }\OperatorTok{%>%}\StringTok{ }\KeywordTok{NB_Bars}\NormalTok{(diagnosis,                ## Covariate of interest}
+                   \DataTypeTok{top_taxa =} \DecValTok{10}\NormalTok{,         ## How many named taxa we want}
+                   \DataTypeTok{RA =} \DecValTok{0}\NormalTok{,               ## Only need one of top_taxa / RA specified}
+                   \DataTypeTok{specific_taxa =} \OtherTok{NULL}\NormalTok{, ## No specific taxa of interest}
+                   \DataTypeTok{xlab =} \StringTok{"HIV Status"}\NormalTok{, }\DataTypeTok{main =} \StringTok{"Title"}\NormalTok{, }\DataTypeTok{subtitle =} \StringTok{"Sub"}\NormalTok{) ## Labels}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Test of the Package}\label{test-of-the-package}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  No ``Unclassified'' category found: data unchangedPrevalence cutoff:
+  5\% (i.e., at least 5\% of libaries must be represented to keep OTU).
+  Should have a new line here.\\
+\item
+  In the otu\_filter or NB\_mods, can rank equal to a vector of levels,
+  not just one level.\\
+\item
+  The alpha and beta diversities calculation function still require the
+  \emph{rank} argument, while the rank has already been specified in
+  previous otu\_filter.\\
+\item
+  all\_fam\_beta\$MH is not callable.\\
+\item
+  all\_fam\_beta\$BC is not callable.\\
+\item
+  The log(Total) in the negative binomial model.\\
+\item
+  nb\_fam\$Convergent\_Summary better have non-zero p value.\\
+\item
+  Variable specified for bar charts is not in original model. for
+  NB\_Bars.
+\end{enumerate}
+
+
+\end{document}

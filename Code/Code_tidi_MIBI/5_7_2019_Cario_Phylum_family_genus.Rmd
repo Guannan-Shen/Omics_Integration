@@ -1,0 +1,410 @@
+---
+title: "Cario phylum family genus species"
+author: "Guannan Shen"
+date: "May 7, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+# opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+# opts_chunk$set(engine = "R")
+# knitr::opts_chunk$set(echo = T)
+# knitr::opts_chunk$set(message = F)
+# knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Data/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/tidi_MIBI/Data/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+## not in function
+'%nin%' <- Negate('%in%')
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+
+# Data
+Focus on the Phylum, Family and Genus level. 
+
+Because, in our case, the OTUs picking was done by reference database, thus we don’t have complete taxanomy at the species level. As a result, for alpha diversities calculation, we can only go down to the genus level.
+
+## Negative Control: MIHIVH20 with 80K counts
+The negative control is not in OTU tables data files. 
+
+```{r importdata}
+############ set the folder ########
+# asus
+# folder <- c('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/')
+# source('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Code_charlie/tidi_MIBI.R')
+# ubuntu
+folder <- c("~/Documents/gitlab/tidi_MIBI/")
+
+
+## source 
+source( paste(folder, "Code_charlie/tidi_MIBI.R", sep = "") )
+
+## 
+levels <- data.frame(matrix( data = c("Phylum", "Class", "Order", "Family", "Genus", "Species") , ncol = 1))
+colnames(levels) <- "Levels of Microbiome Data"
+kable(levels)
+
+#
+read_data <- function(folder, datafile, header){
+  read.table(paste(folder, datafile, sep = ""), header = header)
+}
+
+############## filter the data #############
+#### filter the sample by the shared set of samples
+# the naming convention, a B at the end of the name
+filter_micro <- function(data, samples){
+  data[1,-1] = gsub("B", "", data[1,-1])
+  name = c("OTU_Name", samples)
+  return(data[, (data[1,] %in% name)]  )
+}
+
+###### having column names#######
+filter_micro_t <- function(data, samples){
+  colnames(data)[-1] = gsub("B", "", colnames(data)[-1])
+  name = c("OTU_Name", samples)
+  return(data[,  colnames(data) %in% name]  )
+}
+
+## shared sample size across datasets
+shared_sam <- c( "MIHIV124", "MIHIV132", "MIHIV138", "MIHIV154", "MIHIV178", "MIHIV255", "MIHIV278", "MIHIV286", "MIHIV323", "MIHIV361", "MIHIV391", "MIHIV404", "MIHIV428", "MIHIV493", "MIHIV582", "MIHIV594", "MIHIV648", "MIHIV683", "MIHIV708", "MIHIV716", "MIHIV819", "MIHIV825", "MIHIV839", "MIHIV914", "MIHIV947", "MIHIV972", "MIHIV998")
+
+# fam %>% filter_micro(., shared_sam)
+
+#################### The full set of data ##############
+phy_all <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt", F)
+# ord <- read_data(folder, "Data/order_biopsy_cts_24Aug2018.txt") 
+# fam <- read_data(folder, "Data/family_biopsy_cts_24Aug2018.txt")
+# gen <- read_data(folder, "Data/alltaxa_biopsy_cts_24Aug2018.txt")
+# spe <- read_data(folder, "Data/species_biopsy_cts_24Aug2018.txt") 
+
+############ The shared sample across datasets #############
+phy <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., shared_sam)
+ord <- read_data(folder, "Data/order_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., shared_sam)
+fam <- read_data(folder, "Data/family_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., shared_sam)
+gen <- read_data(folder, "Data/alltaxa_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., shared_sam)
+spe <- read_data(folder, "Data/species_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., shared_sam)
+
+# 
+# ## Meta Data to merge with OTU table
+# old.meta <- read.table("C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", header = T ) 
+
+old.meta <- read.table(paste(folder, "Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", 
+                             sep = ""), 
+                       header = T ) 
+
+
+## colnames(old.meta)
+paste("Samples in Microbiome Data")
+sample <- gsub( "B", "", old.meta$Lib)
+sample
+"MIHIVH20" %in% sample
+
+sum(gsub( "B", "", phy_all[1,-1]) %nin% sample)
+paste("The OTU data and Clinical Data have the same set of samples.")
+
+########### shared samples ##################
+paste("Samples shared across Datasets")
+meta <- old.meta %>% dplyr::mutate(Lib = sample) %>% dplyr::filter(Lib %in% shared_sam)
+paste("Sample Size:", length(table(meta$Lib)))
+
+
+
+```
+
+# Exploratory Data Analysis
+
+## Library Size 
+
+```{r library_size}
+ ########## merge the data files ############
+# phylum data with column names 
+library_size <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt", T)  %>% 
+           filter_micro_t(., shared_sam) %>% .[1,-1] %>% t %>% as.data.frame
+library_size$Lib <- row.names(library_size)
+meta_libsize <- merge(meta, library_size, by = "Lib")
+##### check alignment 
+sum(meta_libsize$Lib != phy[1,-1])
+
+## 
+lib_size <- function(data){
+  x1 = as.numeric(as.vector(unlist(data[2,-1])))
+  name = gsub( "B", "", data[1,-1])
+ 
+  p1 = ggplot(mapping = aes(x1 )) +
+      geom_histogram (stat = "bin", bins = 50) +
+      labs(caption = paste("Library Size"), x = "Library Size" ) +
+      theme_bw()
+  print(p1)
+  p2 = ggplot(mapping = aes(name, x1,  fill = meta_libsize$diagnosis )) +
+      geom_bar (stat="identity") +
+      labs(caption = paste("Library Size"), x = "Samples" , y = "Total Counts") +
+      coord_flip() +
+      ## theme(axis.text.x = element_text(angle = 90)) + 
+      theme_bw()
+  print(p2)
+  p3 = ggplot(mapping = aes(name, x1, fill = meta_libsize$Sex )) +
+      geom_bar (stat="identity") +
+      labs(caption = paste("Library Size"), x = "Samples" , y = "Total Counts") +
+      coord_flip() +
+      ## theme(axis.text.x = element_text(angle = 90)) + 
+      theme_bw()
+  print(p3)
+  p4 = ggplot(mapping = aes(name, x1, fill = meta_libsize$Race )) +
+      geom_bar (stat="identity") +
+      labs(caption = paste("Library Size"), x = "Samples" , y = "Total Counts") +
+      coord_flip() +
+      ## theme(axis.text.x = element_text(angle = 90)) + 
+      theme_bw()
+  print(p4)
+}
+
+lib_size(phy)
+
+##
+meta_libsize %>% dplyr::select(Lib, `1`, diagnosis, Sex, Age, Race, sex_dx) %>% 
+        arrange(`1`) %>% kable(col.names = c("ID", "Library Size", "Diagnosis", "Sex",
+                                             "Age", "Race", "Sex_dx"))
+
+
+
+```
+
+
+
+
+## Covariates
+Predictors usually are included in the model are, "diagnosis", "Sex", "Age", "Race", "sex_dx". 
+
+```{r covariates}
+## 
+ggplot(meta, aes(diagnosis, fill = diagnosis)) +
+  geom_bar() +
+  theme_bw()
+
+ggplot(meta, aes(Race, fill = Race)) +
+  geom_bar() +
+  theme_bw()
+
+ggplot(meta, aes(Sex, fill = Sex)) +
+  geom_bar() +
+  theme_bw()
+
+ggplot(meta, aes(sex_dx, fill = sex_dx)) +
+  geom_bar() +
+  theme_bw()
+
+ggplot(meta, aes(Age)) +
+  geom_histogram(bins = 20) +
+  theme_bw()
+```
+
+## Relative Abundance (RA) and Prevalence
+At phylum, family, genus and species levels. 
+
+Taxa which are present in a minority of the population were collapsed into a single “other” category. 
+
+```{r RA, fig.height=12, fig.width=10}
+phy_t <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt", T)  %>% 
+           filter_micro_t(., shared_sam)
+ord_t <- read_data(folder, "Data/order_biopsy_cts_24Aug2018.txt", T) %>% 
+  filter_micro_t(., shared_sam)
+fam_t <- read_data(folder, "Data/family_biopsy_cts_24Aug2018.txt", T) %>% 
+  filter_micro_t(., shared_sam)
+gen_t <- read_data(folder, "Data/alltaxa_biopsy_cts_24Aug2018.txt", T) %>% 
+  filter_micro_t(., shared_sam)
+spe_t <- read_data(folder, "Data/species_biopsy_cts_24Aug2018.txt", T) %>% 
+  filter_micro_t(., shared_sam)
+
+get_RA <- function(data){
+ ######## pull out information from data #############
+  lib_s = data[1,-1]; samples = colnames(data)[-1]
+  taxa = data[-1, 1]; data_core = data[-1,-1]
+  #### prevalence ####
+ non_zero = apply(data_core , 1, function(x){
+  sum(x != 0)
+   } ) %>% as.data.frame() %>% .[,1]
+
+  ####### calculate RA ############
+ data_ra = matrix(NA, nrow = nrow(data_core))
+ for( i in 1:ncol(data_core) ){
+  ra = round(data_core[,i]/ as.numeric(lib_s[i] ) *100, 4)
+  data_ra = cbind(data_ra,  ra)
+ }
+  data_ra = data.frame( data_ra[, -1] )
+ row.names( data_ra ) = taxa
+  colnames( data_ra ) = samples
+ #### avg_RA #####
+  avg_ra = apply(data_ra, 1, mean) %>% as.data.frame() %>% .[,1] %>% round(., 4)
+
+  res = data_ra  %>% dplyr::mutate(Taxas = taxa,
+                          Prevalence = non_zero,
+                           Avg_RA = avg_ra)  %>% 
+            arrange( desc(Prevalence), desc(Avg_RA)) %>% 
+             dplyr::mutate(Num = 1:nrow(.)) %>% 
+               dplyr::select(Num, Taxas, Prevalence, Avg_RA, everything())
+  return(res)
+}
+
+phy_ra = get_RA(phy_t)
+phy_ra %>% kable(caption = "Phyla")
+
+ord_ra = get_RA(ord_t)
+ord_ra %>% kable(caption = "Orders")
+
+fam_ra = get_RA(fam_t)
+fam_ra %>% kable(caption = "Families")
+
+gen_ra = get_RA(gen_t)
+gen_ra %>% kable(caption = "Genera")
+
+spe_ra = get_RA(spe_t)
+
+
+############# box plot of relative abundance ###########
+
+
+####### same order as meta_libsize ########### 
+sum(row.names(
+phy_ra %>% dplyr::select(-Num, -Prevalence, -Avg_RA) %>% 
+     column_to_rownames("Taxas") %>% t() %>% as.data.frame()
+) != meta_libsize$Lib )
+
+stack_boxplot <- function(data_ra, xlab){
+  data = data_ra %>% dplyr::select(-Num, -Prevalence, -Avg_RA) %>% 
+    ##################### the stack function ###################
+     column_to_rownames("Taxas") %>% t() %>% as.data.frame() %>% stack()
+  ggplot(data, aes(x = ind, y = values)) +
+  geom_boxplot() + 
+  labs(x = xlab, y = "Relative Abundance") +
+  theme(axis.text.x = element_text(angle = 90, size = 10)) +
+  ## geom_dotplot(binaxis='y', stackdir='center', dotsize=.1) 
+  geom_jitter(shape=16, position=position_jitter(0.2), size = 1)
+}
+  
+stack_boxplot(phy_ra, "Phyla")
+stack_boxplot(ord_ra, "Orders")
+
+stack_boxplot_n <- function(data_ra, xlab, n){
+  data = data_ra %>% dplyr::select(-Num, -Prevalence, -Avg_RA) %>% 
+    ##################### the stack function ###################
+     column_to_rownames("Taxas") %>% t() %>% as.data.frame() %>% .[, 1:n] %>% stack()
+  name = paste(xlab, "Top", n)
+  ggplot(data, aes(x = ind, y = values)) +
+  geom_boxplot() + 
+  labs(x = name, y = "Relative Abundance") +
+  theme(axis.text.x = element_text(angle = 90, size = 10)) +
+  ## geom_dotplot(binaxis='y', stackdir='center', dotsize=.1) 
+  geom_jitter(shape=16, position=position_jitter(0.2), size = 2)
+}
+
+stack_boxplot_n(ord_ra, "Orders", 20)
+stack_boxplot_n(fam_ra, "Families", 20)
+stack_boxplot_n(gen_ra, "Genera", 20)
+stack_boxplot_n(spe_ra, "Species", 20)
+
+
+```
+
+
+
+## Alpha Diversity Measures
+
+
+```{r alpha, fig.height=12, fig.width=10}
+ord_set0 <-  tidi_MIBI(class = ord, # OTU Table
+                      meta = meta, ## Meta Data
+                      prev_cutoff = 0, ## Prevalence cutoff
+                      ra_cutoff = 0,   ## Relative abundance cutoff
+                      unc = TRUE)  
+
+mibi.set <-  tidi_MIBI(genus = gen, # OTU Table
+                      meta = meta, ## Meta Data
+                      ## Prevalence cutoff 0
+                      prev_cutoff = 0, 
+                      ## Relative abundance cutoff 0 
+                      ra_cutoff = 0,   
+                      unc = TRUE)  
+gen_set0 <- mibi.set %>% 
+          otu_filter(rank = "Genus", 
+              prev_cutoff = 0, 
+              ra_cutoff = 0,   
+              unc = TRUE)  
+
+########### Alpha Diversity
+
+all_gen_alpha <- Alpha_Div(gen_set0, rank = "Genus")
+## same order
+sum(all_gen_alpha[1:27, 2] != meta_libsize$Lib)
+
+data_alpha <- all_gen_alpha[1:27, 9:14]  %>% 
+  as.data.frame() %>% stack() %>% dplyr::mutate(ID = rep(all_gen_alpha[1:27, 2], 6),
+                                               Diagnosis =  rep(meta_libsize$diagnosis,6),
+                                               Sex = rep(meta_libsize$Sex, 6),
+                                               Race = rep(meta_libsize$Race, 6),
+                                               sex_dx = rep(meta_libsize$sex_dx, 6))
+
+
+all_gen_alpha[1:27, 2]
+## 
+ggplot(data_alpha, aes(x = ID, y = values)) +
+  facet_wrap(~ind, scales = "free") +
+  geom_point(size = 3, aes(colour = Diagnosis, shape = Sex)) +
+  theme(axis.text.x = element_text( size = 3)) + 
+  theme_bw() +
+  labs(x = "Samples", y = "Alpha Diversity Measures")
+
+ggplot(data_alpha, aes(x = ID, y = values)) +
+  facet_wrap(~ind, scales = "free") +
+  geom_point(size = 3, aes(colour = Race, shape = sex_dx)) +
+  theme(axis.text.x = element_text( size = 3)) + 
+  theme_bw() +
+  labs(x = "Samples", y = "Alpha Diversity Measures")
+ 
+
+
+```
+
+Error: quantile(as.numeric(x), c(0.25, 0.75), na.rm = na.rm, names = FALSE, : object 'mibi.set' not found. 

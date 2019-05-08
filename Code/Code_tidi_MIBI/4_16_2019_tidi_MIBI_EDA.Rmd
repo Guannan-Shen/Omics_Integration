@@ -1,0 +1,367 @@
+---
+title: "tidi_MIBI EDA"
+author: "Guannan Shen"
+date: "April 16, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+# opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+# opts_chunk$set(engine = "R")
+# knitr::opts_chunk$set(echo = T)
+# knitr::opts_chunk$set(message = F)
+# knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Data/") 
+## setting working directory in ubuntu
+## opts_knit$set(root.dir = "~/Documents/gitlab/tidi_MIBI/Data/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+
+rm(list = ls())
+
+library(openxlsx)
+library(tidyverse)
+
+
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+## not in function
+'%nin%' <- Negate('%in%')
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+
+```
+
+
+## Data
+
+```{r importdata}
+############ set the folder ########
+# asus
+folder <- c('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/')
+# source('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Code_charlie/tidi_MIBI.R')
+# ubuntu
+## folder <- c("~/Documents/gitlab/tidi_MIBI/")
+
+
+## source 
+source( paste(folder, "Code_charlie/tidi_MIBI.R", sep = "") )
+
+## 
+levels <- data.frame(matrix( data = c("Phylum", "Class", "Order", "Family", "Genus", "Species") , ncol = 1))
+colnames(levels) <- "Levels of Microbiome Data"
+kable(levels)
+
+#
+read_data <- function(folder, datafile){
+  read.table(paste(folder, datafile, sep = ""))
+}
+
+############## filter the data #############
+#### filter the sample by the shared set of samples
+# the naming convention, a B at the end of the name
+filter_micro <- function(data, samples){
+  data[1,-1] = gsub("B", "", data[1,-1])
+  name = c("OTU_Name", samples)
+  return(data[, (data[1,] %in% name)]  )
+}
+
+## shared sample size across datasets
+shared_sam <- c( "MIHIV124", "MIHIV132", "MIHIV138", "MIHIV154", "MIHIV178", "MIHIV255", "MIHIV278", "MIHIV286", "MIHIV323", "MIHIV361", "MIHIV391", "MIHIV404", "MIHIV428", "MIHIV493", "MIHIV582", "MIHIV594", "MIHIV648", "MIHIV683", "MIHIV708", "MIHIV716", "MIHIV819", "MIHIV825", "MIHIV839", "MIHIV914", "MIHIV947", "MIHIV972", "MIHIV998")
+
+# fam %>% filter_micro(., shared_sam)
+
+# phy <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt")
+# ord <- read_data(folder, "Data/order_biopsy_cts_24Aug2018.txt") 
+# fam <- read_data(folder, "Data/family_biopsy_cts_24Aug2018.txt")
+# gen <- read_data(folder, "Data/alltaxa_biopsy_cts_24Aug2018.txt")
+# spe <- read_data(folder, "Data/species_biopsy_cts_24Aug2018.txt") 
+
+phy <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt") %>% filter_micro(., shared_sam)
+ord <- read_data(folder, "Data/order_biopsy_cts_24Aug2018.txt") %>% filter_micro(., shared_sam)
+fam <- read_data(folder, "Data/family_biopsy_cts_24Aug2018.txt") %>% filter_micro(., shared_sam)
+gen <- read_data(folder, "Data/alltaxa_biopsy_cts_24Aug2018.txt") %>% filter_micro(., shared_sam)
+spe <- read_data(folder, "Data/species_biopsy_cts_24Aug2018.txt") %>% filter_micro(., shared_sam)
+
+# 
+# ## Meta Data to merge with OTU table
+# old.meta <- read.table("C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", header = T ) 
+
+old.meta <- read.table(paste(folder, "Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", 
+                             sep = ""), 
+                       header = T ) 
+
+
+## colnames(old.meta)
+sample <- gsub( "B", "", old.meta$Lib)
+sample
+paste("Sample Size:", length(table(old.meta$Lib)))
+
+##
+meta <- old.meta %>% dplyr::mutate(Lib = sample) %>% dplyr::filter(Lib %in% shared_sam) 
+
+```
+
+### Family Level Microbiome and Clinical Data
+
+```{r showinput}
+# fam[1:6, 1:6] %>% kable
+# 
+# old.meta[1:6, 1:10] %>% kable 
+
+## 
+ggplot(meta, aes(diagnosis, fill = diagnosis)) +
+  geom_bar() +
+  theme_bw()
+
+ggplot(meta, aes(Sex, fill = Sex)) +
+  geom_bar() +
+  theme_bw()
+
+ggplot(meta, aes(sex_dx, fill = sex_dx)) +
+  geom_bar() +
+  theme_bw()
+
+## 
+ 
+lib_size <- function(data, name){
+  x1 = as.numeric(as.vector(unlist(data[2,-1])))
+  ggplot(mapping = aes(x1 )) +
+      geom_histogram () +
+      labs(caption = paste("Library size at level of", name) ) +
+      theme_bw()
+}
+
+lib_size(phy, "phylum")
+
+
+##
+########### rowNum > 2 #################
+taxa_hist <- function(data, name, rowNum){
+  names = paste(name, data[rowNum, 1])
+  x1 = as.numeric(as.vector(unlist(data[rowNum,-1])))
+  ggplot(mapping = aes(x1 )) +
+      geom_histogram () +
+      labs(caption = paste("Histogram for", names) ) +
+      theme_bw()
+}
+
+for ( i in 3: nrow(phy)){
+  print(taxa_hist(phy, "Phylum", i))
+
+}
+
+for ( i in 3: nrow(ord)){
+  print(taxa_hist(ord, "Order", i))
+
+}
+
+
+```
+
+### Filtering the Microbiome Data
+Prevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU)  
+Relative abundance cutoff: 1% (i.e., at least one library must have RA > 1% to keep OTU).
+
+```{r setmibi}
+
+## arguments phylum, class, family and genus. 
+
+mibi.set <- tidi_MIBI(phylum = phy, 
+                      class = ord,
+                      family = fam,
+                      genus = gen,## OTU Table
+                      meta = meta, ## Meta Data
+                      prev_cutoff = 5, ## Prevalence cutoff
+                      ra_cutoff = 1,   ## Relative abundance cutoff
+                      unc = TRUE)      ## Unclassified taxa present
+```
+
+### load in data seperately
+
+### Phylum
+
+```{r tryfilter}
+for ( i in c(5, 10, 15, 20)){
+  test.phy <-  tidi_MIBI(phylum = phy, # OTU Table
+                      meta = meta, ## Meta Data
+                      prev_cutoff = i, ## Prevalence cutoff
+                      ra_cutoff = 1,   ## Relative abundance cutoff
+                      unc = TRUE)  
+  
+}
+test.phy <- tidi_MIBI(phylum = phy, # OTU Table
+                      meta = meta, ## Meta Data
+                      prev_cutoff = 5, ## Prevalence cutoff
+                      ra_cutoff = 2,   ## Relative abundance cutoff
+                      unc = TRUE)
+
+```
+
+
+
+### Combined Dataset
+Combined Dataset contains microbiome data at Phylum, Order, Family and Genus levels, together with the clinical parameters.  
+Particularly, *Lib* is the donor, library; *Total* is the library size, the total counts per donor; *cts* is the counts per the library and taxa combination; *clr* is the centered log-ratio transformation of the relative abundance; *per* is the relative abundance percentage. *diagnosis* is HIV-positive or HIV-negative.
+
+
+```{r showmibi}
+dim(mibi.set)
+mibi.set[1:6, 1:15] %>% kable
+
+
+```
+
+
+## Subset of Data for Downstream Analysis
+
+Using only the family level data. 
+
+```{r save_fam}
+all_fam <- mibi.set %>% ## this is a function from the tidyverse called a "pipe" operator 
+  # filter(TimePoint == "4mo", mom_baby == "Baby") %>% ## only want babies at 4 months
+  
+  otu_filter(rank = "Family", ## Taxa level we want
+             prev_cutoff = 5, ## Prevalence cutoff
+             ra_cutoff = 1,   ## Relative abundance cutoff
+             unc = TRUE)      ## Unclassified taxa present)
+
+all_fam[1:6, 1:15] %>% kable
+# write.csv(all_fam, "~/Documents/gitlab/tidi_MIBI/DataProcessed/family_mibiset.csv" , row.names = F)
+
+```
+
+
+### Alpha and Beta Diversities
+
+  We can calculate the alpha and beta diversities of our sample set as well using the functions *Alpha_Div* and *Beta_Div*, respectively. 
+  
+  *Alpha_Div* calculates the Sobs, Chao1, Goods, ShannonE, ShannonH, and SimpsonD alpha diversities and attaches them as columns to the original tidy_MIBI set given. It can handle any combination of taxa levels, and will calculate them all separately. The *iter* argument is the number of bootstrap iterations used in the calculations. Warning: this can take several minutes to run.
+  
+  *Beta_Div* calculates the Bray-Curtis and Morisita-Horn beta diversities. It requires you to specify the rank of taxa calculated, and will return the two beta diversity matrices in a list.
+
+```{r div_fam, eval = F}
+## Alpha Diversity
+all_fam_alpha <- Alpha_Div(all_fam, rank = "Family") ## Not run for time
+all_fam_alpha
+
+## Beta Diversity
+## vegdist {vegan}
+all_fam_beta <- Beta_Div(all_fam, rank = "Family")
+# all_fam_beta
+
+# all_fam_beta$MH ## Morisita-Horn
+# all_fam_beta$BC ## Bray-Curtis 
+
+```
+
+### EDA with Bar Chart
+
+```{r eda_bar, eval=F}
+all_fam %>% NB_Bars(diagnosis,                ## Covariate of interest
+                   top_taxa = 10,         ## How many named taxa we want
+                   RA = 0,               ## Only need one of top_taxa / RA specified
+                   specific_taxa = NULL, ## No specific taxa of interest
+                   xlab = "HIV Status", main = "Title", subtitle = "Sub") ## Labels
+
+```
+
+
+
+### Negative Binomial Models
+
+  It is standard to model the relative abundance of each taxa using a negative binomial distribution. The function *NB_mods* will create negative binomial models for each taxa within a specified rank using the observed counts and the Total as an offset. It uses *glm.nb* from the *MASS* package to fit these models.
+  
+  *NB_mods* will take each variable you specify as a new term to add into the model. For instance, if we include *diagnosis, Age, Sex*, the function will run the model $$log(\hat{cts}) = \beta_0  + \beta_1 diagnosis + \beta_2 Age + \beta_3 Sex + log(Total).$$ You can also include interaction terms (such as Age*Sex) as you can with any other model. 
+  
+25 taxa converged. 28 taxa did not converge.
+
+```{r nb_fam_diagnosis_age_sex, message=F, warning=F, eval=F}
+## run in a seperate r script is fast  
+dim(all_fam)
+
+nb_fam <- all_fam %>%      ## tidy_MIBI set
+  NB_mods(rank = "Family", ## Rank of taxa we want to model
+          diagnosis, Age, Sex       ## The covariates in our model (Group + EWG)
+          )
+                           ## If we wanted the covariates to be Group+EWG+Group*EWG
+                           ## we could just input Group*EWG in the covariate spot.
+
+
+```
+
+
+```{r explore_nb_fam, eval=F}
+# load( 
+#      file = "C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/DataProcessed/nb_model/nb_fam_diagnosis_age_sex.RData" )
+
+nb_fam$Convergent_Summary %>% filter(Coef == "diagnosisPos", FDR_Pval < 0.05 ) %>% arrange(P_val) %>% kable
+
+```
+
+
+### Stacked Bar Charts
+
+  Stacked bar charts of taxa RA is a very useful visualization for microbiome research. We have created a function that will calculate the estimated RA of all taxa based on the convergent models. This gives us the ability to visualize stacked bar charts of RA while controlling for other variables in the model. For instance, if our model is $$log(E(cts)) = \beta_0  + \beta_1 diagnosis + \beta_2 Age + \beta_3 Sex + log(Total)$$ we can visualize the estimated differences in RA among different groups while holding Age and Sex constant. 
+  
+  The function *NB_Bars* will create these stacked bar charts based on the output of the *NB_mods* function. It requires the name of a covariate in your model and can create plots based on main effects or interactions. If a continuous variable is one of the supplied covariates, *NB_Bars* requires a min and max value to plug into the models for estimation.
+  
+  *NB_Bars* gives you the ability to control how taxa are chosen to be named and plotted or aggregated into thYou can specify how many taxa will be named and used in the stacked bar charts using *top_taxa*. This function will take X taxa with the highest RA and put everything else into the "Other" category. You can also specify the *RA* option and it will take all taxa below the RA cutoff you set and put it into the "Other" category. If a particular taxa is of interest you can use *specific_taxa* to pull any taxa out of the "Other" category if it doesn't meet the bar set by either *top_taxa* or *RA*.
+  
+```{r bar, eval=F, include=F}
+nb_fam %>% NB_Bars(diagnosis,                ## Covariate of interest
+                   top_taxa = 10,         ## How many named taxa we want
+                   RA = 0,               ## Only need one of top_taxa / RA specified
+                   specific_taxa = NULL, ## No specific taxa of interest
+                   xlab = "HIV Status", main = "Title", subtitle = "Sub") ## Labels
+```
+
+
+## Test of the Package
+1. No "Unclassified" category found: data unchangedPrevalence cutoff: 5% (i.e., at least 5% of libaries must be represented to keep OTU). Should have a new line here.  
+2. In the otu_filter or  NB_mods, can rank equal to a vector of levels, not just one level.  
+3. The alpha and beta diversities calculation function still require the *rank* argument, while the rank has already been specified in previous otu_filter.  
+4. all_fam_beta$MH is not callable.  
+5. all_fam_beta$BC is not callable.  
+6. The log(Total) in the negative binomial model.  
+7. nb_fam$Convergent_Summary better have non-zero p value.  
+8. Variable specified for bar charts is not in original model. for NB_Bars.  
+
+
+
+
+
+
+
