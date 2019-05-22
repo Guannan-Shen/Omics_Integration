@@ -77,10 +77,30 @@ RNAseq data of IFN-Beta genes list, TMM normalized.
 423 genes and 53 families. 
 
 ```{r importdata}
+# meta data come with the microbiome data
+# asus
+# folder <- c('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/')
+# source('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Code_charlie/tidi_MIBI.R')
+# ubuntu
+folder <- c("~/Documents/gitlab/tidi_MIBI/")
+#### meta data #########
+old.meta <- read.table(paste(folder, "Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", 
+                             sep = ""), header = T ) 
+sample <- gsub( "B", "", old.meta$Lib)
+meta <- old.meta %>% dplyr::mutate(Lib = sample)
+
+
 ## clinical data 
 ## IL6 lps cd4_counts
 clin_micro <- read.xlsx("clin_microbiome.xlsx")
 
+# check overlapping data 
+clin_micro$`IL-6.(pg/ml)` %in% meta$Plasma_IL.6
+clin_micro$ID %in% meta$Lib
+(clin_micro$ID %in% meta$Lib) == (clin_micro$`IL-6.(pg/ml)` %in% meta$Plasma_IL.6)
+# clin_micro$`LPS.(pg/ml)` %in% meta$Plasma_LPS
+# clin_micro$`LPS.(pg/ml)`
+# meta$Plasma_LPS
 ## rna seq data 
 beta <- read.table("genesbeta", header = T)
 colnames(beta)
