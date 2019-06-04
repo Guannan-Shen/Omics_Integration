@@ -1,7 +1,153 @@
 ---
-title: "Table 1s and Boxplots"
+title: "Table 1s"
 author: "Guannan Shen"
 date: "May 22, 2019"
-output: html_document
+output: 
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
 ---
 
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+# opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+# opts_chunk$set(engine = "R")
+# knitr::opts_chunk$set(echo = T)
+# knitr::opts_chunk$set(message = F)
+# knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Data/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/tidi_MIBI/Data/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+library(qwraps2) # table 1 function
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+## not in function
+'%nin%' <- Negate('%in%')
+## left hand side vs right hand side
+`%||%` <- function(lhs, rhs) {
+  if (!is.null(lhs)) {  lhs } 
+  else {  rhs }
+}
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+
+```{r meta_table_box, echo=FALSE}
+# asus
+# folder <- c('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/')
+# source('C:/Users/hithr/Documents/Stats/gitlab/tidi_MIBI/Code_charlie/tidi_MIBI.R')
+# ubuntu
+folder <- c("~/Documents/gitlab/tidi_MIBI/")
+## source 
+source( paste(folder, "Code_charlie/tidi_MIBI.R", sep = "") )
+
+#################### samples ########################
+# shared across datasets
+# library size larger than 10k
+small_lib <- c("MIHIV998")
+print(small_lib)
+## shared sample size across datasets
+shared_sam <- c( "MIHIV124", "MIHIV132", "MIHIV138", "MIHIV154", "MIHIV178", "MIHIV255", "MIHIV278", "MIHIV286", "MIHIV323", "MIHIV361", "MIHIV391", "MIHIV404", "MIHIV428", "MIHIV493", "MIHIV582", "MIHIV594", "MIHIV648", "MIHIV683", "MIHIV708", "MIHIV716", "MIHIV819", "MIHIV825", "MIHIV839", "MIHIV914", "MIHIV947", "MIHIV972", "MIHIV998")
+
+sample_size <-  length(shared_sam[ shared_sam %nin% small_lib])
+final_sam <- shared_sam[ shared_sam %nin% small_lib]
+
+#### meta data #########
+old.meta <- read.table(paste(folder, "Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", 
+                             sep = ""), header = T ) 
+sample <- gsub( "B", "", old.meta$Lib)
+meta <- old.meta %>% dplyr::mutate(Lib = sample) %>% dplyr::filter(Lib %in% final_sam) 
+
+######### from data to table 1 and boxplots #######
+# library qwraps2
+meta_table1 <- function(meta){
+  ####### meta data refine
+  # transfer na to NA
+  meta[meta=="na"] = NA 
+
+  ######## the data will groupby diagnosis #########
+  #my summary of table 1
+  my_summary =
+  list("Demographics" =
+          list("Age mean (SD)" =  
+                  ~ qwraps2::mean_sd(Age, na_rm =  TRUE, denote_sd = "paren"),
+               "Men (%)" = 
+                  ~ qwraps2::n_perc(Sex == "M")),
+      "Race (%)" = 
+          list ("White" = ~ qwraps2::n_perc(Race == "w"),
+                "Asian" = ~ qwraps2::n_perc(Race == "a"),
+                "African American" = ~ qwraps2::n_perc(Race == "b")),
+      "Ethnicity (%)" = 
+          list ("Non-Hispanic" = ~ qwraps2::n_perc(Ethnicity == "n"),
+                "Hispanic" = ~ qwraps2::n_perc(Ethnicity == "y")),
+       "Measurements" = 
+         list("CD4 count (cells/mul)" = 
+                ~ mean_sd(CD4_Cnt, na_rm =  TRUE, digits = 0, denote_sd = "paren"),
+              "Plasma Viral Load (copies/ml) Non-Missing No.;" = 
+                ~ mean_sd(as.numeric(Plasma_VL), na_rm =  TRUE, digits = 0, denote_sd = "paren"),
+              "Plasma IL-6 (pg/ml) " = 
+                ~ mean_sd(Plasma_IL.6, na_rm =  TRUE, digits = 2, denote_sd = "paren"),
+              "Plasma LPS (pg/ml) Non-Missing No.;" = 
+                ~ mean_sd(as.numeric(Plasma_LPS), na_rm =  TRUE, digits = 2, denote_sd = "paren")
+              )
+  )
+  #
+  options(qwraps2_markup = "markdown")
+  # show table 1
+  # groupby 
+  # at overall level and group by diagnosis
+  rgroup <- c(2, 3, 2, 4)
+  names(rgroup) <- c("Demographics", "Race (%)", "Ethnicity (%)", 
+                   "Measurements mean (SD)")
+ qable( cbind( summary_table(meta,  my_summary),
+                  summary_table(group_by(meta, diagnosis), my_summary) )
+      # , cnames = c("No Treatment (N = 26)", "Placebo (N = 26)")
+       ,  rgroup = rgroup,
+       cnames = c("Overall     (N = 26)", "Healthy Controls     (N = 13)", "HIV-Infected     (N = 13)") )
+  
+}
+
+levels <- data.frame(matrix( data = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species") , ncol = 1))
+colnames(levels) <- "Levels of Microbiota"
+kable(levels)
+
+meta_table1(meta)
+
+## 
+
+
+```
