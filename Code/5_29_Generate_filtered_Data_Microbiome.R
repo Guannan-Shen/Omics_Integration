@@ -72,6 +72,40 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
     names(df) <- as.character(unlist(df[1,]))
     df[-1,]
   }
+  ######### get library size ################
+  lib_s = phy_t[1,-1]
+  ################# get RA for all taxa, no filtering, might be useful if we do transformation other than clr ######
+  get_RA <- function(data){
+    ######## pull out information from data #############
+    lib_s = data[1,-1]; samples = colnames(data)[-1]
+    taxa = data[-1, 1]; data_core = data[-1,-1]
+    #### prevalence ####
+    non_zero = apply(data_core , 1, function(x){
+      sum(x != 0)
+    } ) %>% as.data.frame() %>% .[,1]
+    
+    ####### calculate RA ############
+    data_ra = matrix(NA, nrow = nrow(data_core))
+    for( i in 1:ncol(data_core) ){
+      # do not round RA
+      ra = data_core[,i]/ as.numeric(lib_s[i] ) *100
+      data_ra = cbind(data_ra,  ra)
+    }
+    data_ra = data.frame( data_ra[, -1] )
+    row.names( data_ra ) = taxa
+    colnames( data_ra ) = samples
+    #### avg_RA #####
+    avg_ra = apply(data_ra, 1, mean) %>% as.data.frame() %>% .[,1] %>% round(., 4)
+    
+    res = data_ra  %>% dplyr::mutate(Taxas = taxa,
+                                     Prevalence = non_zero,
+                                     Avg_RA = avg_ra)  %>% 
+      arrange( desc(Prevalence), desc(Avg_RA)) %>% 
+      dplyr::mutate(Num = 1:nrow(.)) %>% 
+      dplyr::select(Num, Taxas, Prevalence, Avg_RA, everything())
+    return(res)
+  }
+  
   ############ The shared sample across datasets #############
   phy <- read_data(folder, "Data/phylum_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., final_sam)
   ord <- read_data(folder, "Data/order_biopsy_cts_24Aug2018.txt", F) %>% filter_micro(., final_sam)
@@ -90,6 +124,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
                          ra_cutoff = RA,   
                          ## unclassified
                          unc = TRUE)  
+    data_ra = get_RA(phy_t)
   } 
   else if (level == "order"){
     mibi.set <-  tidi_MIBI(class = ord,
@@ -99,6 +134,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
                            ## Relative abundance cutoff  
                            ra_cutoff = RA,   
                            unc = TRUE) 
+    data_ra = get_RA(ord_t)
   }
   else if (level == "family"){
     mibi.set <-  tidi_MIBI(family = fam,
@@ -108,6 +144,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
                            ## Relative abundance cutoff  
                            ra_cutoff = RA,   
                            unc = TRUE) 
+    data_ra = get_RA(fam_t)
   }
   else if (level == "genus"){
     mibi.set <-  tidi_MIBI(genus = gen,
@@ -117,6 +154,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
                            ## Relative abundance cutoff 
                            ra_cutoff = RA,   
                            unc = TRUE) 
+    data_ra = get_RA(gen_t)
   }
   else if (level == "species"){
     mibi.set <-  tidi_MIBI(genus = spe,
@@ -126,6 +164,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
                            ## Relative abundance cutoff 
                            ra_cutoff = RA,   
                            unc = TRUE) 
+    data_ra = get_RA(spe_t)
   }
   mibi.set$ra <- (mibi.set$cts/ mibi.set$Total)*100
   # long format to wide format, RA
@@ -136,5 +175,21 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
   mibi_filter_clr <-  mibi.set  %>% 
     dplyr::select(Lib, Taxa, clr) %>%
     spread(., Taxa, clr) %>% as.data.frame()
-  return(list(mibi_filter_ra, mibi_filter_clr))
+  return(list(mibi_filter_ra, mibi_filter_clr, data_ra, lib_s))
 }
+
+
+######################### clean microbiome data #####################
+## with the above function, the microbiome data has been filtered 
+## and the centered log ratio transformation has been applied to the Relative Abundance
+## need to scale to mean 0 variance 1
+rescale_microbiome <- function(data){
+  # the df, eg list[[2]] from the above return has a column Lib
+  df = data %>% as.data.frame() %>% column_to_rownames("Lib") 
+  results = data.frame(apply(df, 2, scale)) 
+  rownames(results) = rownames(df)
+  return(results)
+}
+
+
+

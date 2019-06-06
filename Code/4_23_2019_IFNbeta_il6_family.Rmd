@@ -99,7 +99,7 @@ clin_micro$`IL-6.(pg/ml)` %in% meta$Plasma_IL.6
 clin_micro$ID %in% meta$Lib
 (clin_micro$ID %in% meta$Lib) == (clin_micro$`IL-6.(pg/ml)` %in% meta$Plasma_IL.6)
 # clin_micro$`LPS.(pg/ml)` %in% meta$Plasma_LPS
-# clin_micro$`LPS.(pg/ml)`
+# clin_micro$`LPS.(pg/ml)` this is more accurate
 # meta$Plasma_LPS
 ## rna seq data 
 beta <- read.table("genesbeta", header = T)
@@ -150,6 +150,11 @@ fam_scale$ID <- row.names(fam_sm)
 beta_tmm_scale <- data.frame(apply(tmm_beta[row.names(tmm_beta) %in% IDs ,], 2, scale))
 beta_tmm_scale$ID <- row.names(tmm_beta)[row.names(tmm_beta) %in% IDs]
 
+## IFN-Beta specific genes now contains 424 genes and 406 genes remain after filtering.
+n1 <- dim(fam_scale)[2]
+n2 <- dim(il6_cd4_lps )[2] - 1
+n3 <- dim(beta_tmm_scale)[2] - 1
+
 ## merge dataset
 data <- merge( fam_scale, 
 merge( il6_cd4_lps,beta_tmm_scale, by = "ID" ),
@@ -167,19 +172,19 @@ as.vector(data$ID)
 ```{r smccnet}
 # fam_sm, 53 families
 # clinical data data[, 55:60], gender, age, hiv, cd4, il6, lps
-# tmm_beta, 423 genes 
+# tmm_beta, 406 genes 
 dim(data)
-microbiome <- data[, 2:54]
+microbiome <- data[, 2:n1]
 #  clin
 # il6
-il6 <- data[, 59]
+il6 <- data[, n1+5]
 #
-gene <- data[, 61:483]
+gene <- data[, (n1+n2+1):(n1+n2+n3)]
 # n for p1 and all names
 n <-  ncol(gene)
 names <- c(colnames(gene), colnames(microbiome))
 # corre
-x <- cbind(data[, 61:483], data[, 2:54])
+x <- cbind(data[, (n1+n2+1):(n1+n2+n3)], data[, 2:n1])
 corr <- cor(x)
 
 #######  Unweighted SmCCA
@@ -197,6 +202,8 @@ plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel =
 ## other
 cd4 <- data[, 58]
 lps <- data[, 60]
+which(is.na(lps))
+
 # c("cd4", "lps"), as.name(), eval()
 
 W1 <- getRobustPseudoWeights(gene, microbiome, Trait = cd4, Lambda1 = 0.01,
