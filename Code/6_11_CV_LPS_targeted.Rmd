@@ -161,4 +161,11 @@ p2 <- ncol(mibi)
 n <- nrow(isgs_rlog[-n_na, ])
 AbarLabel <- c(colnames(cbind(isgs_rlog, mibi)))
 
+# parameters 
+K <- 4 # Number of folds in K-fold CV.
+CCcoef <- NULL # Unweighted version of SmCCNet.
+# Microbiome is the 2nd one, thus s2 is larger
+s1 <- 0.7; s2 <- 0.9 # Feature sampling proportions.
+SubsamplingNum <- 1000 # Number of subsamples.
+
 ```
