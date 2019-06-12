@@ -265,4 +265,11 @@ abar <- getAbar(W1, P1 = n, FeatureLabel = names)
 modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 1 - 0.1^10, PlotTree = TRUE)
 plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
 
+# change the cutheight
+modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 0.5, PlotTree = TRUE)
+modules
+# ModuleIdx Index for the module to be plotted. It can not exceed the length of multiOmicsModule
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
+
+
 ```

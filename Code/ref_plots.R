@@ -53,7 +53,7 @@ get_corr <- function(df1, df2, label){
 # the value could be variance and correlations 
 box_values_group <- function(data, title){
   # 
-  print("Need a column called group and a column called values")
+  print("A column called group and a column called values")
  p = ggplot(data, aes(x = group, y = values, fill = group )) + 
     geom_boxplot(width=0.3) +
    # grey scale plot
@@ -73,7 +73,7 @@ box_values_group <- function(data, title){
 # the data is a dataframe contains a column of value and anothe column of grouping. 
 # the value could be variance and correlations 
 density_values_group <- function(data, title){
-  print("Need a column called group and a column called values")
+  print("A column called group and a column called values")
   p = ggplot(data, aes(x = values, color = group, fill = group)) + 
     # alpha controls the transparency 
     geom_density(alpha = 0.5) +
