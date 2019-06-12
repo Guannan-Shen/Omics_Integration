@@ -247,8 +247,19 @@ plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel =
 lps = clin %>% select(LPS)  %>% as.matrix() %>% as.vector()
 length(lps)
 set.seed(123)
-W1 <- getRobustPseudoWeights(isgs_rlog, mibi, Trait = lps, Lambda1 = 0.01,
-      Lambda2 = 0.01, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+W1 <- getRobustPseudoWeights(isgs_rlog, mibi, Trait = lps, Lambda1 = 0.3,
+      Lambda2 = 0.15, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 2000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = n, FeatureLabel = names)
+modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 1 - 0.1^10, PlotTree = TRUE)
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
+
+lps = clin %>% select(LPS)  %>% as.matrix() %>% as.vector()
+length(lps)
+set.seed(123)
+W1 <- getRobustPseudoWeights(isgs_rlog, mibi, Trait = lps, Lambda1 = 0.05,
+      Lambda2 = 0.05, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
       SubsamplingNum = 2000, CCcoef = NULL, trace = FALSE)
 dim(W1)
 abar <- getAbar(W1, P1 = n, FeatureLabel = names)
@@ -267,10 +278,9 @@ modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 1 - 0.1^10, PlotTree =
 plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
 
 # change the cutheight
-modules <- getMultiOmicsModules(abar, P1 = n, CutHeight = 0.5, PlotTree = TRUE)
-modules
+modules <- getMultiOmicsModules(abar, P1 = n)
 # ModuleIdx Index for the module to be plotted. It can not exceed the length of multiOmicsModule
-plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names)
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = 1, P1 = n, FeatureLabel = names, EdgeCut = 0)
 
 
 ```

@@ -117,14 +117,17 @@ linear combinations of omics features and the phenotype, which assumes finite va
 finite covariance. It is necessary to include a transformation if the data are skewed.
 
 ```{r ref_weights}
+# names
+colnames(isgs_rlog) <- isgs_symbol$Symbol
+# where na in LPS
 n_na = which(is.na( clin$LPS ))
 # get hints ideas
 # the final clinical parameter to use
-clin_para = clin %>% select(LPS) %>% na.omit()
+LPS= clin %>% select(LPS) %>% na.omit() 
 df1 = get_corr(mibi[-n_na, ], isgs_rlog[-n_na, ], "Microbiome:Core ISGs")
 # stats::cor(clin$LPS, mibi, use = "pairwise.complete.obs", method = "pearson")
-df2 = get_corr(clin_para, mibi[-n_na, ], "LPS:Microbiome")
-df3 = get_corr(clin_para, isgs_rlog[-n_na, ], "LPS:Core ISGs")
+df2 = get_corr(LPS, mibi[-n_na, ], "LPS:Microbiome")
+df3 = get_corr(LPS, isgs_rlog[-n_na, ], "LPS:Core ISGs")
 # plots
 data = rbind(df1, df2, df3)
 
@@ -142,8 +145,9 @@ check_skew(rna_isgs[[3]], "Density Plot of rlog Transcriptome")
 ```
 
 # SmCCNet Parameters Engineering
+If EdgeCut = 0 (default), then the full module network will be created.
 
-```{r smccnet}
+```{r smccnet_para}
 ########## parameters ################
 # by convention, the first Omics is transcriptome and the 2nd is the microbiome 
 # this sample size, 25, the paper use 4-fold 
@@ -152,8 +156,6 @@ n_na = which(is.na( clin$LPS ))
 # check ID order again
 sum(rownames(mibi) != rownames(isgs_rlog) )
 sum(rownames(isgs_rlog) != clin$ID)
-# names
-colnames(isgs_rlog) <- isgs_symbol$Symbol
 
 # unchanged parameters
 p1 <- ncol(isgs_rlog)
@@ -161,11 +163,93 @@ p2 <- ncol(mibi)
 n <- nrow(isgs_rlog[-n_na, ])
 AbarLabel <- c(colnames(cbind(isgs_rlog, mibi)))
 
-# parameters 
-K <- 4 # Number of folds in K-fold CV.
-CCcoef <- NULL # Unweighted version of SmCCNet.
-# Microbiome is the 2nd one, thus s2 is larger
-s1 <- 0.7; s2 <- 0.9 # Feature sampling proportions.
-SubsamplingNum <- 1000 # Number of subsamples.
+# # parameters 
+# K <- 4 # Number of folds in K-fold CV.
+# CCcoef <- NULL # Unweighted version of SmCCNet.
+# # Microbiome is the 2nd one, thus s2 is larger
+# s1 <- 0.7; s2 <- 0.9 # Feature sampling proportions.
+# SubsamplingNum <- 1000 # Number of subsamples.
 
+# 4 fold Cross Validation error
+t12 <- read.csv(file = paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/YCore_ISGs_Genus4foldCV/", 
+                            "TotalPredictionError.csv"))
+
+t12 %>% plyr::arrange(CC.Pred..Error) %>% kable(., 
+                            caption = "aggregated pseudo canonical correlations and Total Prediction Error")
+
+
+
+
+
+```
+
+## Run SmCCNet
+The trimmed module (edge cut = 0.1) is shown below. If a full module does not contain any edge that passes the cut threshold, a message “No edge passes threshold” will be produced. To see all complete module, set edgeCut = 0.  
+The Lambda1 and Lambda2 are the most important parameters.  
+
+```{r SmCCNet_results}
+# correlation 
+x <- cbind(isgs_rlog[-n_na, ], mibi[-n_na, ])
+corr <- cor(x, method = "pearson")
+# Make LPS a vector
+LPS = clin %>% select(LPS) %>% na.omit() %>% as.matrix() %>% as.vector()
+
+############# Unweighted ####################
+set.seed(123)
+W1 <- getRobustPseudoWeights(isgs_rlog[-n_na, ], mibi[-n_na, ], Trait = LPS, Lambda1 = 0.3,
+      Lambda2 = 0.15, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 1000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+# robust similarity matrix 
+abar <- getAbar(W1, P1 = p1, FeatureLabel = AbarLabel)
+modules <- getMultiOmicsModules(abar, P1 = p1, PlotTree = T, CutHeight = 1 - 0.1^10)
+for(idx in 1:length(modules)){
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabel = AbarLabel,
+                      EdgeCut = 0.1)
+}
+
+
+############## weighted ##################
+set.seed(123)
+W1 <- getRobustPseudoWeights(isgs_rlog[-n_na, ], mibi[-n_na, ], Trait = LPS, Lambda1 = 0.3,
+      Lambda2 = 0.15, s1 = 0.7, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 1000, CCcoef = c(10,5,1), trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = p1, FeatureLabel = AbarLabel)
+modules <- getMultiOmicsModules(abar, P1 = p1)
+for(idx in 1:length(modules)){
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabel = AbarLabel, 
+                      EdgeCut = 0.1)
+}
+
+
+```
+
+
+## Double Check the Results
+This is to interpret the results.
+
+```{r check_microbiome}
+#
+print("Why always you?")
+taxon_name <- colnames(mibi)[4]
+print(taxon_name)
+taxon <- gen_30_10[[3]][37, -c(1,3,4)] %>% t
+df1 <- taxon[-1, ] %>% as.data.frame() %>% rownames_to_column("ID")
+colnames(df1)[2] <- taxon[1, 1]
+df <- merge(df1, clin[, 1:2], by = "ID")
+df[,2] <- as.numeric(df[,2])
+ p = ggplot(df, aes(x = Group, y = `Bacteria/Bacteroidetes/Bacteroidia/Bacteroidales/Prevotellaceae`, 
+                    fill = Group )) + 
+    geom_boxplot(width=0.3) +
+   # grey scale plot
+    scale_fill_grey(start = 0.2, end = 0.8) +
+   # get the quantiles annotation
+    stat_summary(geom="text", fun.y=quantile,
+                 aes(label=sprintf("%1.1f", ..y..) ), color = "black",
+                 position=position_nudge(x=0.33), size = 4) +
+    theme_bw() +
+    labs(caption = "Relative Abundance by HIV Status") 
+ 
+ print(p)
 ```
