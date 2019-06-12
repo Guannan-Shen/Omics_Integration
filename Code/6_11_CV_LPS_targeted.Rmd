@@ -46,7 +46,7 @@ rm(list = ls())
 library(openxlsx)
 library(tidyverse)
 library(magrittr)
-
+library(BiocStyle)
 library(caret)   # for cross validation
 
 library(SmCCNet)
@@ -54,20 +54,11 @@ library(SmCCNet)
 options(stringsAsFactors = F)
 options(dplyr.width = Inf)
 getwd()
-# not in function
-'%nin%' <- Negate('%in%')
-# is nothing
-isnothing = function(x) {
-  # test against NULL NA NaN
-  any(is.null(x))  || any(is.na(x))  || any(is.nan(x)) 
-}
 
-## left hand side vs right hand side
-'%||%' <- function(lhs, rhs) {
-  if ( !isnothing(lhs) ) {  lhs } 
-  else if ( !isnothing(rhs) ){  rhs }
-  else { print("Both sides contain NULL, NA or NaN!")}
-}
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
 
 # ######## clean memory ######################
 # rm(list = ls())
@@ -79,5 +70,95 @@ isnothing = function(x) {
 # Data and Functions
 
 ```{r importdata}
-5 %||% NULL
+# source functions 
+# source to get the load_filtered_micro_level function to get clr of RA
+source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
+# clean and transform transcriptome data, subset of genes
+source( paste0(dir, "Code/6_5_clean_transcriptome.R") )
+# clinical data 
+source( paste0(dir, "Code/6_5_clean_clinical.R") )
+# diagnostic plots and tables
+source( paste0(dir, "Code/ref_plots.R") )
+
+########## Datasets #############
+#### phenotype contains ID
+clin <- rescaled_cli() 
+# import gene lists #
+isgs <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/coreISG")) )
+genesbeta <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/genesbeta" )) )
+# LPS
+# Num 16 subjest is missing 
+which(is.na( clin$LPS ))
+
+#### Transcriptome
+# get gene symbols 
+rna_isgs <- rescaled_rna(isgs, rlog = T)
+isgs_symbol = rna_isgs[[2]] %>% dplyr::select(Symbol)
+# rlog transform or not
+isgs_rlog <- rna_isgs[[1]]
+
+#### Microbiome
+gen_30_10 <- load_filtered_micro_level("genus",  prevalence = 30, RA = 10, wd = "Ubuntu")
+micro_clr <- gen_30_10[[2]] %>% as.data.frame()
+# rescale to mean 0 and variance 1 
+mibi <- rescale_microbiome(micro_clr)
+#
+anyNA(mibi)
+anyNA(isgs_rlog)
+
+
+```
+
+# Density Plots: Hints for weighted SmCCNet
+For LPS, the measurement of subject 16 is missing.  
+Skewness:  
+> Although SmCCNet does not require normality, it calculates the Pearson correlation between
+linear combinations of omics features and the phenotype, which assumes finite variances and
+finite covariance. It is necessary to include a transformation if the data are skewed.
+
+```{r ref_weights}
+n_na = which(is.na( clin$LPS ))
+# get hints ideas
+# the final clinical parameter to use
+clin_para = clin %>% select(LPS) %>% na.omit()
+df1 = get_corr(mibi[-n_na, ], isgs_rlog[-n_na, ], "Microbiome:Core ISGs")
+# stats::cor(clin$LPS, mibi, use = "pairwise.complete.obs", method = "pearson")
+df2 = get_corr(clin_para, mibi[-n_na, ], "LPS:Microbiome")
+df3 = get_corr(clin_para, isgs_rlog[-n_na, ], "LPS:Core ISGs")
+# plots
+data = rbind(df1, df2, df3)
+
+box_values_group(data, "Pearson Correlations")
+density_values_group(data, "Pearson Correlations")
+
+# starting points of weights
+print("From the boxplot and the Density Plot: Weights 10, 5, 1 for X1X2, LPS:Microbiome, LPS:Core ISGs")
+
+# check skewness
+check_skew(micro_clr, "Density Plot of CLR of Microbiome RA")
+check_skew(rescaled_rna(isgs, rlog = F)[[3]], "Density Plot of without rlog Transcriptome")
+check_skew(rna_isgs[[3]], "Density Plot of rlog Transcriptome")
+
+```
+
+# SmCCNet Parameters Engineering
+
+```{r smccnet}
+########## parameters ################
+# by convention, the first Omics is transcriptome and the 2nd is the microbiome 
+# this sample size, 25, the paper use 4-fold 
+# missing
+n_na = which(is.na( clin$LPS ))
+# check ID order again
+sum(rownames(mibi) != rownames(isgs_rlog) )
+sum(rownames(isgs_rlog) != clin$ID)
+# names
+colnames(isgs_rlog) <- isgs_symbol$Symbol
+
+# unchanged parameters
+p1 <- ncol(isgs_rlog)
+p2 <- ncol(mibi)
+n <- nrow(isgs_rlog[-n_na, ])
+AbarLabel <- c(colnames(cbind(isgs_rlog, mibi)))
+
 ```

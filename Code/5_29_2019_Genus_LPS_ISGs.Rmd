@@ -138,17 +138,18 @@ clin$ID[is.na( clin$LPS )]
 source("~/Documents/gitlab/Omics_Integration/Code/ref_plots.R")
 
 ## compare variance with rlog or not
-hist_var(isgs_rlog, "Within-subject Variance: Core ISGs rlog")
-hist_var(isgs, "Within-subject Variance: Core ISGs")
+# Wrong! You can not make across genes comparison (within subject) by Transcriptome Data
+# hist_var(isgs_rlog, "Within-subject Variance: Core ISGs rlog")
+# hist_var(isgs, "Within-subject Variance: Core ISGs")
 
-# make data of variance and correlations 
-# data to compare within-subject variance
-data =  rbind( get_var(isgs, "No rlog"), 
-               get_var(isgs_rlog, "rlog") )
-               
-#
-box_values_group(data, "Core ISGs Preprocessed: Within-subject Variance")
-density_values_group(data, "Core ISGs Preprocessed: Within-subject Variance")
+# # make data of variance and correlations 
+# # data to compare within-subject variance
+# data =  rbind( get_var(isgs, "No rlog"), 
+#                get_var(isgs_rlog, "rlog") )
+#                
+# #
+# box_values_group(data, "Core ISGs Preprocessed: Within-subject Variance")
+# density_values_group(data, "Core ISGs Preprocessed: Within-subject Variance")
 
 ####### data to compare correlations ######
 # no missing 

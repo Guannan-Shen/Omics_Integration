@@ -95,8 +95,10 @@ rescaled_rna <- function(genelist, rlog){
   if(missing(genelist)){
     print("No gene list provided, will use the whole Transcriptome")
     # rescale using the scale function
-    results = data.frame(apply(df, 2, scale)) 
-    rownames(results) = rownames(df)
+    tmp = df
+    results = data.frame(apply(tmp, 2, scale)) 
+    rownames(results) = ID
+    base::rownames(tmp) = ID
     genes = gene_ID_Sym
   }
   else{
@@ -107,11 +109,12 @@ rescaled_rna <- function(genelist, rlog){
     results = data.frame(apply(tmp, 2, scale))
     # rownames is the subjects
     base::rownames(results) = ID
+    base::rownames(tmp) = ID
     # get list of genes symbols
     genes = gene_ID_Sym[ gene_ID_Sym$Gene_ID %in% genelist$Gene_ID, ]
   }
-  # results is the rescaled data
-  return(list(results, genes))
+  # results is the rescaled data and before rescaled data
+  return(list(results, genes, tmp))
 }
 
 

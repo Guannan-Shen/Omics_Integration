@@ -170,11 +170,11 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
   # long format to wide format, RA
   mibi_filter_ra <-  mibi.set  %>% 
     dplyr::select(Lib, Taxa, ra) %>%
-    spread(., Taxa, ra) %>% as.data.frame()
+    spread(., Taxa, ra) %>% as.data.frame() %>% column_to_rownames("Lib")
   # long format to wide 
   mibi_filter_clr <-  mibi.set  %>% 
     dplyr::select(Lib, Taxa, clr) %>%
-    spread(., Taxa, clr) %>% as.data.frame()
+    spread(., Taxa, clr) %>% as.data.frame() %>% column_to_rownames("Lib")
   return(list(mibi_filter_ra, mibi_filter_clr, data_ra, lib_s))
 }
 
@@ -185,7 +185,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
 ## need to scale to mean 0 variance 1
 rescale_microbiome <- function(data){
   # the df, eg list[[2]] from the above return has a column Lib
-  df = data %>% as.data.frame() %>% column_to_rownames("Lib") 
+  df = data %>% as.data.frame()  
   results = data.frame(apply(df, 2, scale)) 
   rownames(results) = rownames(df)
   return(results)

@@ -15,6 +15,7 @@ getwd()
 # the histogram is the distribution of within-subject variance 
 # the data has rownames as the subject ID
 hist_var <- function(data, title){
+  print("Not for Transcriptome!")
   var = apply(data, 1, function(x){
     var(as.vector(as.matrix(x) ))
   })
@@ -28,6 +29,7 @@ hist_var <- function(data, title){
 ## get within-subject variance, by row
 get_var <- function(data, label){
   print("Group is the group label")
+  print("Not for Transcriptome!")
   var = apply(data, 1, function(x){
     var(as.vector(as.matrix(x) ))
   }) %>% as.data.frame() %>% dplyr::mutate(group = label) %>% 
@@ -85,4 +87,21 @@ density_values_group <- function(data, title){
     labs(caption = title) 
   print(p)
 }
+
+## check skewness 
+check_skew <- function(df, title){
+  data = df %>% as.data.frame() %>% stack() %>% 
+    as.data.frame()  
+  p = ggplot(data, aes(x = values)) + 
+    # alpha controls the transparency 
+    geom_density(alpha = 0.5, fill = "grey50") +
+    # gray scale color
+    # grey scale plot
+    # scale_colour_grey() +
+    # scale_fill_grey() +
+    theme_bw() +
+    labs(caption = title) 
+  print(p)
+}
+
 
