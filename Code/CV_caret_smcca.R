@@ -45,6 +45,24 @@ column with zero variance.")
 # k_fold_lambda(X1 = isgs_rlog, X2 = mibi, Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus")
 check_standardize(isgs_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
 ##################################
+
+######### get the dir name ###########
+get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name){
+  # use weights in the name
+  clin_name = as.character(substitute(Y)) 
+  name = paste0(clin_name, paste(CCcoef, collapse = "") )
+  # Set a CV directory.
+  setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+  CVDir <-  paste0(name, Omics_name, K, Sys.time(), "foldCV/")
+  dir.create(CVDir)
+  # 
+  return(CVDir)
+}
+
+######### run CV ##################
+CV_lambda <- function(X1, X2, Y, K, CCcoef, Omics_name){
+  
+}
 X1 = isgs_rlog[-n_na, ]; X2 = mibi[-n_na, ]; Y = LPS; K = 4; CCcoef = NULL; Omics_name = "Core_ISGs_Genus"
 
 # parameters unchanged
@@ -71,11 +89,12 @@ clin_name = as.character(substitute(Y))
 name = paste0(clin_name, paste(CCcoef, collapse = "") )
 # Set a CV directory.
 setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
-CVDir <-  paste0(clin_name, Omics_name, K, "foldCV/")
+CVDir <-  paste0(name, Omics_name, K, "foldCV/")
 dir.create(CVDir)
 # The standardized training
 # and test data sets will be saved under the CV directory.
-set.seed(12345) # Set random seed.
+set.seed(sample.int(1e5, 1)) # Set random seed.
+
 foldIdx <- split(1:n, sample(1:n, K))
 for(i in 1:K){
   iIdx <- foldIdx[[i]]

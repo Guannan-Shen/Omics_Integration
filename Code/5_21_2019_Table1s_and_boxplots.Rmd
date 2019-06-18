@@ -84,7 +84,9 @@ print(small_lib)
 shared_sam <- c( "MIHIV124", "MIHIV132", "MIHIV138", "MIHIV154", "MIHIV178", "MIHIV255", "MIHIV278", "MIHIV286", "MIHIV323", "MIHIV361", "MIHIV391", "MIHIV404", "MIHIV428", "MIHIV493", "MIHIV582", "MIHIV594", "MIHIV648", "MIHIV683", "MIHIV708", "MIHIV716", "MIHIV819", "MIHIV825", "MIHIV839", "MIHIV914", "MIHIV947", "MIHIV972", "MIHIV998")
 
 sample_size <-  length(shared_sam[ shared_sam %nin% small_lib])
-final_sam <- shared_sam[ shared_sam %nin% small_lib]
+# use the smallest one or not 
+# final_sam <- shared_sam[ shared_sam %nin% small_lib]
+final_sam <- shared_sam
 
 #### meta data #########
 old.meta <- read.table(paste(folder, "Data/SEQ020_Wilson1_metadata_all_subjects_24Aug2018.txt", 
@@ -137,7 +139,7 @@ meta_table1 <- function(meta){
                   summary_table(group_by(meta, diagnosis), my_summary) )
       # , cnames = c("No Treatment (N = 26)", "Placebo (N = 26)")
        ,  rgroup = rgroup,
-       cnames = c("Overall     (N = 26)", "Healthy Controls     (N = 13)", "HIV-Infected     (N = 13)") )
+       cnames = c("Overall     (N = 27)", "Healthy Controls     (N = 13)", "HIV-Infected     (N = 14)") )
   
 }
 

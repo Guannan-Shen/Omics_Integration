@@ -77,12 +77,15 @@ source( paste0(dir, "Code/pca_functions.R") )
 # using unfiltered 
 # load_filtered_micro_level [[2]]
 pca_microbiome_plots("order", 0, 0, "Ubuntu")
-# Create sparsity penalty options.
+pca_microbiome_plots("family", 0, 0, "Ubuntu")
+pca_microbiome_plots("genus", 0, 0, "Ubuntu")
+
+########## explore filtering cutoffs ###############
 prev <- seq(5, 50, by = 5)
 ra <-  seq(1, 10, by = 1)
 pr <- expand.grid(prev, ra) %>% as.data.frame() %>% dplyr::rename(prevalence = Var1,
                                                                   RA = Var2)
-pr_run <- pr[-c(10, 13:16, 27),]
+pr_run <- rbind(c(0,0 ), pr[-c(10, 13:15, 26:27),])
 levels_m <- c("phylum", "order", "family", "genus", "species" )
 
 # get n of taxa summary table
@@ -95,9 +98,6 @@ for(l in levels_m){
   pr_run[ ,n] <- sum
   colnames(pr_run)[n] <- l
 }
-pr_run
-dim(pr_run)
-pr
-get_n_taxa(l, 50, 1, wd = "Ubuntu")
-which(levels_m %in% "species") + 2
+pr_run %>% kable
+
 ```
