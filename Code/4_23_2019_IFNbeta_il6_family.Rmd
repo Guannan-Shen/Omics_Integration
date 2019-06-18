@@ -76,6 +76,9 @@ RNAseq data of IFN-Beta genes list, TMM normalized.
 27 subjects in common.  
 423 genes and 53 families. 
 
+## Check Shared Samples 
+
+
 ```{r importdata}
 # meta data come with the microbiome data
 # asus

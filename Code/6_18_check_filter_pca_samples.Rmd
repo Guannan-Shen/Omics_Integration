@@ -1,0 +1,103 @@
+---
+title: "Check Filter and Samples"
+author: "Guannan Shen"
+date: "June 18, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+library(magrittr)
+library(SmCCNet)
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+# Check Libraries
+
+Using PCA plots to determine whether the smallest library "MIHIV998" is an outlier or not. 
+
+```{r check_foundation}
+# source functions 
+# source to get the load_filtered_micro_level function to get clr of RA
+source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
+source( paste0(dir, "Code/pca_functions.R") )
+# pca analysis check outliers in Lib
+# using unfiltered 
+# load_filtered_micro_level [[2]]
+pca_microbiome_plots("order", 0, 0, "Ubuntu")
+# Create sparsity penalty options.
+prev <- seq(5, 50, by = 5)
+ra <-  seq(1, 10, by = 1)
+pr <- expand.grid(prev, ra) %>% as.data.frame() %>% dplyr::rename(prevalence = Var1,
+                                                                  RA = Var2)
+pr_run <- pr[-c(10, 13:16, 27),]
+levels_m <- c("phylum", "order", "family", "genus", "species" )
+
+# get n of taxa summary table
+sum <- rep(NA, nrow(pr_run)) %>% as.vector()
+for(l in levels_m){
+  n = which(levels_m %in% l) + 2
+  for(i in 1:nrow(pr_run)){
+    sum[i] <- get_n_taxa(l, pr_run[i,1], pr_run[i,2], wd = "Ubuntu")
+  }
+  pr_run[ ,n] <- sum
+  colnames(pr_run)[n] <- l
+}
+pr_run
+dim(pr_run)
+pr
+get_n_taxa(l, 50, 1, wd = "Ubuntu")
+which(levels_m %in% "species") + 2
+```
