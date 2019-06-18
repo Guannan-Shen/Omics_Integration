@@ -91,16 +91,19 @@ old.meta <- read.table(paste(folder, "Data/SEQ020_Wilson1_metadata_all_subjects_
                              sep = ""), header = T ) 
 sample <- gsub( "B", "", old.meta$Lib)
 meta <- old.meta %>% dplyr::mutate(Lib = sample)
-
-
+dim(meta)
 ## clinical data 
 ## IL6 lps cd4_counts
+# cli1 = read.xlsx("clinical_ready.xlsx")
 clin_micro <- read.xlsx("clin_microbiome.xlsx")
 
 # check overlapping data 
 clin_micro$`IL-6.(pg/ml)` %in% meta$Plasma_IL.6
 clin_micro$ID %in% meta$Lib
+length(clin_micro$ID)
+
 (clin_micro$ID %in% meta$Lib) == (clin_micro$`IL-6.(pg/ml)` %in% meta$Plasma_IL.6)
+
 # clin_micro$`LPS.(pg/ml)` %in% meta$Plasma_LPS
 # clin_micro$`LPS.(pg/ml)` this is more accurate
 # meta$Plasma_LPS
@@ -164,6 +167,12 @@ merge( il6_cd4_lps,beta_tmm_scale, by = "ID" ),
 by = "ID")
 
 as.vector(data$ID)
+
+########## outer join ###############
+colnames(meta)[1] <- "ID"
+all_clin <- merge(x = clin_micro, y = meta, by = "ID", all = TRUE)
+table(meta$diagnosis)
+shared_clin <- merge(x = clin_micro, y = meta, by = "ID")
 
 ```
 
