@@ -58,11 +58,13 @@ get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name){
   # 
   return(CVDir)
 }
-
+get_CVDir(X1 = isgs_rlog, X2 = mibi, Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus")
 ######### run CV ##################
 CV_lambda <- function(X1, X2, Y, K, CCcoef, Omics_name){
   
 }
+
+
 X1 = isgs_rlog[-n_na, ]; X2 = mibi[-n_na, ]; Y = LPS; K = 4; CCcoef = NULL; Omics_name = "Core_ISGs_Genus"
 
 # parameters unchanged
