@@ -3,20 +3,20 @@ title: "Table 1s"
 author: "Guannan Shen"
 date: "May 22, 2019"
 output: 
-  pdf_document:
-    latex_engine: lualatex
-    number_sections: yes
-    toc: yes
-    toc_depth: 5
-  word_document:
-    toc: yes
-    toc_depth: '5'
   html_document:
     number_sections: yes
     theme: united
     toc: yes
     toc_depth: 5
     toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
 ---
 
 ```{r setup, include=FALSE, cache = FALSE}
