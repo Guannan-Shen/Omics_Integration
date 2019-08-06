@@ -194,7 +194,7 @@ rescale_microbiome <- function(data){
 ############# using all 27 samples #########################
 load_filtered_micro_level_samples <- function(level, prevalence, RA, wd){
   #########
-  # level  c("phylum", "Order", "family", "Genus", "Species" )
+  # level  c("phylum", "order", "family", "genus", "species" )
   # prevalence and RA are positive integers
   # RA = "Ubuntu" "ASUS"
   ##########

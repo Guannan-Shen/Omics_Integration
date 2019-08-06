@@ -60,7 +60,9 @@ rescaled_rna <- function(genelist, rlog){
                   "MIHIV428", "MIHIV493", "MIHIV582", "MIHIV594", "MIHIV648", "MIHIV683", 
                   "MIHIV708", "MIHIV716", "MIHIV819", "MIHIV825", "MIHIV839", "MIHIV914", 
                   "MIHIV947", "MIHIV972", "MIHIV998")
-  final_sam = shared_sam[ shared_sam %nin% small_lib]
+  # final_sam = shared_sam[ shared_sam %nin% small_lib]
+  # use all 27 samples
+  final_sam = shared_sam
   # rlog or not
   if(rlog){
     print("Regularized Log Transformation will be applied!")

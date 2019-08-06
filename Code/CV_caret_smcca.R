@@ -17,6 +17,10 @@ getwd()
 # # directory, Ubuntu 
 # dir = "~/Documents/gitlab/Omics_Integration/"
 
+############# Three testing datasets from 6_11_CV_LPS_targeted #############
+###### 8_5_testing_dataset ############
+## isgs_rlog, mibi, LPS
+
 # In the code below, we show how to create CV
 # data sets and check if all data sets are valid (i.e. standardizable).
 check_standardize <- function(X1, X2, Y, K){
