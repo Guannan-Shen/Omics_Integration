@@ -2,6 +2,7 @@
 ## histogram and boxplot with stat_summary ##
 '%nin%' <- Negate('%in%')
 options(stringsAsFactors = F)
+options(dplyr.width = Inf)
 
 library(readxl)
 library(tidyverse)
@@ -108,6 +109,7 @@ check_skew <- function(df, title){
 ## elbow plot of filtering microbiome 
 elbow_prev <- function(taxa_level, prev_vector, RA){
   # source to get the load_filtered_micro_level function to get clr of RA
+  dir = "~/Documents/gitlab/Omics_Integration/"
   source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
   y_ntaxa = c(NULL)
   for (i in prev_vector){
@@ -115,7 +117,7 @@ elbow_prev <- function(taxa_level, prev_vector, RA){
     n = data[[2]] %>% as.data.frame() %>% ncol()
     y_ntaxa = c(y_ntaxa, n)
   }
-  coords = paste(prev_vector, y_ntaxa, sep=", ")
+  coords = paste("(", prev_vector, ", ", y_ntaxa, ")", sep="")
   p = ggplot(mapping =  aes(x = prev_vector, y = y_ntaxa )) + 
     theme_bw() +
     geom_line() +
@@ -123,14 +125,15 @@ elbow_prev <- function(taxa_level, prev_vector, RA){
          y = paste0("n taxa at ", toTitleCase(taxa_level), " level") ) + 
     geom_label(aes(prev_vector, y_ntaxa, label=coords))
   print(p)
-  ggsave(filename = paste0("cd ~/Documents/gitlab/Omics_Integration/Reports/plots/","Prev", 
-                prev_vector, taxa_level, ".tiff"),
+  ggsave(filename = paste0("~/Documents/gitlab/Omics_Integration/Reports/plots/","Prev", 
+               taxa_level, RA, ".tiff"),
          dpi = 300, compression = "lzw" )
 }
 
 
 elbow_RA <- function(taxa_level, prev, RA_vector){
   # source to get the load_filtered_micro_level function to get clr of RA
+  dir = "~/Documents/gitlab/Omics_Integration/"
   source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
   y_ntaxa = c(NULL)
   for (i in RA_vector){
@@ -138,7 +141,7 @@ elbow_RA <- function(taxa_level, prev, RA_vector){
     n = data[[2]] %>% as.data.frame() %>% ncol()
     y_ntaxa = c(y_ntaxa, n)
   }
-  coords = paste(RA_vector, y_ntaxa, sep=", ")
+  coords = paste("(", RA_vector, ", ", y_ntaxa, ")", sep="")
   p = ggplot(mapping =  aes(x = RA_vector, y = y_ntaxa )) + 
     theme_bw() +
     geom_line() +
@@ -146,14 +149,16 @@ elbow_RA <- function(taxa_level, prev, RA_vector){
          y = paste0("n taxa at ", toTitleCase(taxa_level), " level") ) + 
     geom_label(aes(RA_vector, y_ntaxa, label=coords))
   print(p)
-  ggsave(filename = paste0("cd ~/Documents/gitlab/Omics_Integration/Reports/plots/", 
-                           clin_symbol, "_", gene_symbol, ".tiff"),
+  ggsave(filename =  paste0( taxa_level, prev, "RA.tiff"), device = NULL, 
+         path = "~/Documents/gitlab/Omics_Integration/Reports/plots/",
          dpi = 300, compression = "lzw")
 }
-elbow_RA('genus', 0, c(0, 0.5, 1, 2, 3, 4, 5))
-elbow_prev("genus", seq(0, 70, 10), 0)
-elbow_prev("genus", seq(0, 60, 10), 1)
+# elbow_RA('genus', 0, c(0, 0.5, 1, 2, 3, 4, 5))
+# 
+# elbow_prev("genus", seq(0, 70, 10), 0)
+# elbow_prev("genus", seq(0, 60, 10), 1)
+# elbow_prev("genus", seq(0, 70, 10), 2)
 
-contour_prev_RA <- function(taxa_level){
+contour_prev_RA <- function(taxa_level, prev_vector, RA_vector){
   
 }

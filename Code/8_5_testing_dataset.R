@@ -42,8 +42,8 @@ isgs_rlog <- rna_isgs[[1]]
 colnames(isgs_rlog) <- rna_isgs[[2]]$Symbol
 
 #### Microbiome
-gen_30_10 <- load_filtered_micro_level_samples("genus",  prevalence = 30, RA = 10, wd = "Ubuntu")
-micro_clr <- gen_30_10[[2]] %>% as.data.frame()
+micro_data <- load_filtered_micro_level_samples("genus",  prevalence = 40, RA = 2, wd = "Ubuntu")
+micro_clr <- micro_data[[2]] %>% as.data.frame()
 
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)

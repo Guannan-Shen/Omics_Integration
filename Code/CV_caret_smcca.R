@@ -51,26 +51,25 @@ check_standardize(isgs_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
 ##################################
 
 ######### get the dir name ###########
-get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name){
+get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name, ntrys){
   # use weights in the name
+  print("K fold cross-validation!")
   clin_name = as.character(substitute(Y)) 
-  name = paste0(clin_name, paste(CCcoef, collapse = "") )
+  name = paste0(clin_name, "_", paste(CCcoef, collapse = "") )
   # Set a CV directory.
   setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
-  CVDir <-  paste0(name, Omics_name, K, Sys.time(), "foldCV/")
+  CVDir <-  paste0(name, Omics_name, "_", ntrys,"_", K, "foldCV/")
   dir.create(CVDir)
   # 
   return(CVDir)
 }
-get_CVDir(X1 = isgs_rlog, X2 = mibi, Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus")
+
 ######### run CV ##################
-CV_lambda <- function(X1, X2, Y, K, CCcoef, Omics_name){
-  
-}
-
-
-X1 = isgs_rlog[-n_na, ]; X2 = mibi[-n_na, ]; Y = LPS; K = 4; CCcoef = NULL; Omics_name = "Core_ISGs_Genus"
-
+CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2){
+  #
+  print("K fold and K threads!")
+  # Set a CV directory.
+  setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
 # parameters unchanged
 p1 = ncol(X1)
 p2 = ncol(X2)
@@ -80,7 +79,7 @@ AbarLabel = c(colnames(cbind(X1, X2)))
 print("For sample size < 30, K fold = 4 is recommended.")
 print("CCcoef can be NULL or length 3 numeric vectors.")
 # 
-s1 = 0.7; s2 = 0.9 # Feature sampling proportions.
+# s1 = 0.6; s2 = 0.9 # Feature sampling proportions.
 SubsamplingNum = 1000 # Number of subsamples.
 # Create sparsity penalty options.
 pen1 = seq(.05, .3, by = .05)
@@ -90,13 +89,12 @@ P1P2 = expand.grid(pen1, pen2)
 # Map (l1, l2) to (c1, c2).
 c1 = sqrt(p1 * s1) * P1P2[ , 1]; c1[c1 < 1] = 1
 c2 = sqrt(p2 * s2) * P1P2[ , 2]; c2[c2 < 1] = 1
-# get the name
-clin_name = as.character(substitute(Y)) 
-name = paste0(clin_name, paste(CCcoef, collapse = "") )
-# Set a CV directory.
-setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
-CVDir <-  paste0(name, Omics_name, K, "foldCV/")
-dir.create(CVDir)
+# # get the name
+# clin_name = as.character(substitute(Y)) 
+# name = paste0(clin_name, paste(CCcoef, collapse = "") )
+
+# CVDir <-  paste0(name, Omics_name, K, "foldCV/")
+# dir.create(CVDir)
 # The standardized training
 # and test data sets will be saved under the CV directory.
 set.seed(sample.int(1e5, 1)) # Set random seed.
@@ -215,7 +213,7 @@ f2 <- list(
   color = "black"
 )
 a <- list(
-  title = "Lambda1",
+  title = paste("Lambda1", "(s1=", s1, "s2=", s2,")",sep = " "),
   titlefont = f1,
   showticklabels = TRUE,
   tickfont = f2
@@ -229,6 +227,10 @@ b <- list(
 hmelt <- melt(T12[ , -3], id.vars = c("l1", "l2"))
 contourPlot <- plot_ly(hmelt, x = ~l1, y = ~l2, z = ~value, type = "contour") %>%
   layout(xaxis = a, yaxis = b, showlegend = TRUE, legend = f1)  
-contourPlot
+ print(contourPlot)
+}
+
 # orca(contourPlot, file = paste0(CVDir, "TotalPredictionError.pdf"))
-  
+CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = 3)
+CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+          CCcoef = NULL, s1 = 0.6, s2= 0.9)
