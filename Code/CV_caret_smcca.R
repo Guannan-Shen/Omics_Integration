@@ -47,7 +47,7 @@ column with zero variance.")
 }
 
 # k_fold_lambda(X1 = isgs_rlog, X2 = mibi, Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus")
-check_standardize(isgs_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
+
 ##################################
 
 ######### get the dir name ###########
@@ -65,7 +65,7 @@ get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name, ntrys){
 }
 
 ######### run CV ##################
-CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2){
+CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2, pen1, pen2){
   #
   print("K fold and K threads!")
   # Set a CV directory.
@@ -82,8 +82,8 @@ print("CCcoef can be NULL or length 3 numeric vectors.")
 # s1 = 0.6; s2 = 0.9 # Feature sampling proportions.
 SubsamplingNum = 1000 # Number of subsamples.
 # Create sparsity penalty options.
-pen1 = seq(.05, .3, by = .05)
-pen2 = seq(.05, .3, by = .05)
+pen1 = seq(.05, pen1, by = .05)
+pen2 = seq(.05, pen2, by = .05)
 P1P2 = expand.grid(pen1, pen2)
 #
 # Map (l1, l2) to (c1, c2).
@@ -213,7 +213,7 @@ f2 <- list(
   color = "black"
 )
 a <- list(
-  title = paste("Lambda1", "(s1=", s1, "s2=", s2,")",sep = " "),
+  title = paste("Lambda1", "(s1 =", s1, "s2 =", s2,")",sep = " "),
   titlefont = f1,
   showticklabels = TRUE,
   tickfont = f2
@@ -227,10 +227,29 @@ b <- list(
 hmelt <- melt(T12[ , -3], id.vars = c("l1", "l2"))
 contourPlot <- plot_ly(hmelt, x = ~l1, y = ~l2, z = ~value, type = "contour") %>%
   layout(xaxis = a, yaxis = b, showlegend = TRUE, legend = f1)  
- print(contourPlot)
+# orca not works for me
+ export(contourPlot, paste0(CVDir, "L1L2.png"))
+
 }
 
 # orca(contourPlot, file = paste0(CVDir, "TotalPredictionError.pdf"))
-CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = 3)
-CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
-          CCcoef = NULL, s1 = 0.6, s2= 0.9)
+#######3 run ################
+check_standardize(isgs_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
+
+# CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = 1)
+# CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+#           CCcoef = NULL, s1 = 0.9, s2= 0.9,
+#           pen1 = 0.6, pen2 = 0.3)
+
+################ grid search ################
+s1 = seq(.5, 0.9, by = .1)
+s2 = seq(.5, 0.9, by = .1)
+s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
+
+for (i in 1:nrow(s1s2)){
+  CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = i)
+  CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+            CCcoef = NULL, s1 = s1s2[i,1], s2= s1s2[i,2],
+            pen1 = 0.6, pen2 = 0.3)
+}
+
