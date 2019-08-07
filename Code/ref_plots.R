@@ -70,6 +70,9 @@ box_values_group <- function(data, title){
     labs(caption = title) 
  
  print(p)
+ ggsave(filename =  paste0( title, "box.tiff"), device = NULL, 
+        path = "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+        dpi = 300, compression = "lzw")
 }
 
 
@@ -88,6 +91,9 @@ density_values_group <- function(data, title){
     theme_bw() +
     labs(caption = title) 
   print(p)
+  ggsave(filename =  paste0( title, "density.tiff"), device = NULL, 
+         path = "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+         dpi = 300, compression = "lzw")
 }
 
 ## check skewness 
@@ -158,6 +164,8 @@ elbow_RA <- function(taxa_level, prev, RA_vector){
 # elbow_prev("genus", seq(0, 70, 10), 0)
 # elbow_prev("genus", seq(0, 60, 10), 1)
 # elbow_prev("genus", seq(0, 70, 10), 2)
+# elbow_RA('genus', 30, c(0, 0.5, 1, 2, 3, 4, 5))
+# elbow_RA('genus', 40, c(0, 0.5, 1, 2, 3, 4, 5))
 
 contour_prev_RA <- function(taxa_level, prev_vector, RA_vector){
   

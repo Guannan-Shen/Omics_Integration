@@ -97,6 +97,14 @@ isgs_symbol = rna_isgs[[2]] %>% dplyr::select(Symbol)
 # rlog transform or not
 isgs_rlog <- rna_isgs[[1]]
 
+# ifn-beta
+genesbeta <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/genesbeta" )) )
+rna_genesbeta <- rescaled_rna(genesbeta, rlog = T)
+# rlog transform or not
+genesbeta_rlog <- rna_genesbeta[[1]]
+# names
+colnames(genesbeta_rlog) <- rna_genesbeta[[2]]$Symbol
+
 #### Microbiome
 gen_30_10 <- load_filtered_micro_level_samples("genus",  prevalence = 30, RA = 10, wd = "Ubuntu")
 micro_clr <- gen_30_10[[2]] %>% as.data.frame()
@@ -225,31 +233,105 @@ plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabe
 
 ```
 
+### Tuning Results 
+```{r tuning}
+################ core ISGs ################
+# correlation 
+x <- cbind(isgs_rlog[-n_na, ], mibi[-n_na, ])
+corr <- cor(x, method = "pearson")
+p1 <- ncol(isgs_rlog)
+p2 <- ncol(mibi)
+n <- nrow(isgs_rlog[-n_na, ])
+AbarLabel <- c(colnames(cbind(isgs_rlog, mibi)))
+####
+set.seed(123)
+W1 <- getRobustPseudoWeights(isgs_rlog[-n_na, ], mibi[-n_na, ], Trait = LPS, Lambda1 = 0.35,
+      Lambda2 = 0.1, s1 = 0.8, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 1000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+# robust similarity matrix 
+abar <- getAbar(W1, P1 = p1, FeatureLabel = AbarLabel)
+modules <- getMultiOmicsModules(abar, P1 = p1, PlotTree = T, CutHeight = 1 - 0.1^10)
+for(idx in 1:length(modules)){
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabel = AbarLabel,
+                      EdgeCut = 0)
+}
 
+
+### weighted ####
+set.seed(123)
+W1 <- getRobustPseudoWeights(isgs_rlog[-n_na, ], mibi[-n_na, ], Trait = LPS, Lambda1 = 0.3,
+      Lambda2 = 0.05, s1 = 0.8, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 1000, CCcoef = c(10,1,10), trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = p1, FeatureLabel = AbarLabel)
+modules <- getMultiOmicsModules(abar, P1 = p1)
+for(idx in 1:length(modules)){
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabel = AbarLabel, 
+                      EdgeCut = 0)
+}
+
+################## Beta ISGs ##############
+# correlation 
+x <- cbind(genesbeta_rlog[-n_na, ], mibi[-n_na, ])
+corr <- cor(x, method = "pearson")
+p1 <- ncol(genesbeta_rlog)
+p2 <- ncol(mibi)
+n <- nrow(genesbeta_rlog[-n_na, ])
+AbarLabel <- c(colnames(cbind(genesbeta_rlog, mibi)))
+#######
+set.seed(123)
+W1 <- getRobustPseudoWeights(genesbeta_rlog[-n_na, ], mibi[-n_na, ], Trait = LPS, Lambda1 = 0.2,
+      Lambda2 = 0.05, s1 = 0.8, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 1000, CCcoef = NULL, trace = FALSE)
+dim(W1)
+# robust similarity matrix 
+abar <- getAbar(W1, P1 = p1, FeatureLabel = AbarLabel)
+modules <- getMultiOmicsModules(abar, P1 = p1, PlotTree = T, CutHeight = 1 - 0.1^10)
+for(idx in 1:length(modules)){
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabel = AbarLabel,
+                      EdgeCut = 0)
+}
+
+
+#### weighted ###
+set.seed(123)
+W1 <- getRobustPseudoWeights(genesbeta_rlog[-n_na, ], mibi[-n_na, ], Trait = LPS, Lambda1 = 0.1,
+      Lambda2 = 0.05, s1 = 0.8, s2 = 0.9, NoTrait = FALSE, FilterByTrait = FALSE,
+      SubsamplingNum = 1000, CCcoef = c(10,1,10), trace = FALSE)
+dim(W1)
+abar <- getAbar(W1, P1 = p1, FeatureLabel = AbarLabel)
+modules <- getMultiOmicsModules(abar, P1 = p1)
+for(idx in 1:length(modules)){
+plotMultiOmicsNetwork(abar, corr, modules, ModuleIdx = idx, P1 = p1, FeatureLabel = AbarLabel, 
+                      EdgeCut = 0)
+}
+
+```
 ## Double Check the Results
 This is to interpret the results.
 
-```{r check_microbiome}
-#
-print("Why always you?")
-taxon_name <- colnames(mibi)[4]
-print(taxon_name)
-taxon <- gen_30_10[[3]][37, -c(1,3,4)] %>% t
-df1 <- taxon[-1, ] %>% as.data.frame() %>% rownames_to_column("ID")
-colnames(df1)[2] <- taxon[1, 1]
-df <- merge(df1, clin[, 1:2], by = "ID")
-df[,2] <- as.numeric(df[,2])
- p = ggplot(df, aes(x = Group, y = `Bacteria/Bacteroidetes/Bacteroidia/Bacteroidales/Prevotellaceae`, 
-                    fill = Group )) + 
-    geom_boxplot(width=0.3) +
-   # grey scale plot
-    scale_fill_grey(start = 0.2, end = 0.8) +
-   # get the quantiles annotation
-    stat_summary(geom="text", fun.y=quantile,
-                 aes(label=sprintf("%1.1f", ..y..) ), color = "black",
-                 position=position_nudge(x=0.33), size = 4) +
-    theme_bw() +
-    labs(caption = "Relative Abundance by HIV Status") 
- 
- print(p)
+```{r check_microbiome, include=F}
+# #
+# print("Why always you?")
+# taxon_name <- colnames(mibi)[4]
+# print(taxon_name)
+# taxon <- gen_30_10[[3]][37, -c(1,3,4)] %>% t
+# df1 <- taxon[-1, ] %>% as.data.frame() %>% rownames_to_column("ID")
+# colnames(df1)[2] <- taxon[1, 1]
+# df <- merge(df1, clin[, 1:2], by = "ID")
+# df[,2] <- as.numeric(df[,2])
+#  p = ggplot(df, aes(x = Group, y = `Bacteria/Bacteroidetes/Bacteroidia/Bacteroidales/Prevotellaceae`, 
+#                     fill = Group )) + 
+#     geom_boxplot(width=0.3) +
+#    # grey scale plot
+#     scale_fill_grey(start = 0.2, end = 0.8) +
+#    # get the quantiles annotation
+#     stat_summary(geom="text", fun.y=quantile,
+#                  aes(label=sprintf("%1.1f", ..y..) ), color = "black",
+#                  position=position_nudge(x=0.33), size = 4) +
+#     theme_bw() +
+#     labs(caption = "Relative Abundance by HIV Status") 
+#  
+#  print(p)
 ```
