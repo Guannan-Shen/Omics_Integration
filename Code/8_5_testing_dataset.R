@@ -31,7 +31,14 @@ clin <- rescaled_cli()
 # the final clinical parameter to use
 # where na in LPS
 n_na <-  which(is.na( clin$LPS ))
-LPS <- clin %>% select(LPS) %>% na.omit() 
+LPS <- clin %>% select(LPS) # %>% na.omit() 
+
+# check other clinical parameters
+sum(which(is.na( clin$CD14 )) )
+which(is.na( clin$`IL-6`))
+which(is.na( clin$CRP))
+sum(which(is.na( LPS )) )
+CD14 <- clin %>% select(CD14)
 
 # import gene lists #
 isgs <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/coreISG")) )
@@ -61,8 +68,8 @@ mibi <- rescale_microbiome(micro_clr)
 source( paste0(dir, "Code/ref_plots.R") )
 df1 = get_corr(mibi[-n_na, ], genesbeta_rlog[-n_na, ], "Microbiome:Beta-ISGs")
 # stats::cor(clin$LPS, mibi, use = "pairwise.complete.obs", method = "pearson")
-df2 = get_corr(LPS, mibi[-n_na, ], "LPS:Microbiome")
-df3 = get_corr(LPS, genesbeta_rlog[-n_na, ], "LPS:Beta-ISGs")
+df2 = get_corr(LPS[-n_na], mibi[-n_na, ], "LPS:Microbiome")
+df3 = get_corr(LPS[-n_na], genesbeta_rlog[-n_na, ], "LPS:Beta-ISGs")
 # plots
 data = rbind(df1, df2, df3)
 
@@ -72,8 +79,8 @@ density_values_group(data, "Pearson Correlations Summary (Beta-ISGs Microbiome L
 ######## isgs ############
 df1 = get_corr(mibi[-n_na, ], isgs_rlog[-n_na, ], "Microbiome:Core-ISGs")
 # stats::cor(clin$LPS, mibi, use = "pairwise.complete.obs", method = "pearson")
-df2 = get_corr(LPS, mibi[-n_na, ], "LPS:Microbiome")
-df3 = get_corr(LPS, isgs_rlog[-n_na, ], "LPS:Core-ISGs")
+df2 = get_corr(LPS[-n_na], mibi[-n_na, ], "LPS:Microbiome")
+df3 = get_corr(LPS[-n_na], isgs_rlog[-n_na, ], "LPS:Core-ISGs")
 # plots
 data = rbind(df1, df2, df3)
 
