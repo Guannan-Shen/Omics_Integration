@@ -213,13 +213,13 @@ f2 <- list(
   color = "black"
 )
 a <- list(
-  title = paste("Lambda1", "(s1 =", s1, "s2 =", s2,")",sep = " "),
+  title = paste("L1", "(s1 =", s1, "s2 =", s2,")",sep = " "),
   titlefont = f1,
   showticklabels = TRUE,
   tickfont = f2
 )
 b <- list(
-  title = "Lambda2",
+  title = "L2",
   titlefont = f1,
   showticklabels = TRUE,
   tickfont = f2
@@ -233,57 +233,58 @@ contourPlot <- plot_ly(hmelt, x = ~l1, y = ~l2, z = ~value, type = "contour") %>
 }
 
 # orca(contourPlot, file = paste0(CVDir, "TotalPredictionError.pdf"))
-#######3 run ################
-check_standardize(isgs_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
-check_standardize(genesbeta_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
 
-# CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = 1)
-# CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
-#           CCcoef = NULL, s1 = 0.9, s2= 0.9,
-#           pen1 = 0.6, pen2 = 0.3)
-
-################ grid search ################
-#### unweighted isgs
-s1 = seq(.5, 0.9, by = .1)
-s2 = seq(.5, 0.9, by = .1)
-s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
-
-for (i in 1:nrow(s1s2)){
-  CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = i)
-  CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
-            CCcoef = NULL, s1 = s1s2[i,1], s2= s1s2[i,2],
-            pen1 = 0.6, pen2 = 0.3)
-}
-### weighted isgs 
-s1 = seq(.6, 0.9, by = .1)
-s2 = seq(.7, 0.9, by = .1)
-s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
-for (i in 1:nrow(s1s2)){
-  CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = c(20,1,20), Omics_name = "Core_ISGs_Genus", ntrys = i)
-  CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
-            CCcoef = c(20,1,20), s1 = s1s2[i,1], s2= s1s2[i,2],
-            pen1 = 0.5, pen2 = 0.3)
-}
-
-######## updated grid search of genesbeta (narrow down) ######
-### unweighted genesbeta
-s1 = seq(.6, 0.9, by = .1)
-s2 = seq(.7, 0.9, by = .1)
-s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
-for (i in 1:nrow(s1s2)){
-  CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "genesbeta_Genus", ntrys = i)
-  CV_lambda(X1 = genesbeta_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
-            CCcoef = NULL, s1 = s1s2[i,1], s2= s1s2[i,2],
-            pen1 = 0.6, pen2 = 0.3)
-}
-
-### weighted genesbeta
-s1 = seq(.6, 0.9, by = .1)
-s2 = seq(.7, 0.9, by = .1)
-s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
-for (i in 1:nrow(s1s2)){
-  CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = c(10,1,10), Omics_name = "genesbeta_Genus", ntrys = i)
-  CV_lambda(X1 = genesbeta_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
-            CCcoef = c(10,1,10), s1 = s1s2[i,1], s2= s1s2[i,2],
-            pen1 = 0.6, pen2 = 0.3)
-}
+# ####### test run ################
+# check_standardize(isgs_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
+# check_standardize(genesbeta_rlog[-n_na, ], mibi[-n_na, ], LPS, K = 4)
+# 
+# # CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = 1)
+# # CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+# #           CCcoef = NULL, s1 = 0.9, s2= 0.9,
+# #           pen1 = 0.6, pen2 = 0.3)
+# 
+# ################ grid search ################
+# #### unweighted isgs
+# s1 = seq(.5, 0.9, by = .1)
+# s2 = seq(.5, 0.9, by = .1)
+# s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
+# 
+# for (i in 1:nrow(s1s2)){
+#   CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "Core_ISGs_Genus", ntrys = i)
+#   CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+#             CCcoef = NULL, s1 = s1s2[i,1], s2= s1s2[i,2],
+#             pen1 = 0.6, pen2 = 0.3)
+# }
+# ### weighted isgs 
+# s1 = seq(.6, 0.9, by = .1)
+# s2 = seq(.7, 0.9, by = .1)
+# s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
+# for (i in 1:nrow(s1s2)){
+#   CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = c(20,1,20), Omics_name = "Core_ISGs_Genus", ntrys = i)
+#   CV_lambda(X1 = isgs_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+#             CCcoef = c(20,1,20), s1 = s1s2[i,1], s2= s1s2[i,2],
+#             pen1 = 0.5, pen2 = 0.3)
+# }
+# 
+# ######## updated grid search of genesbeta (narrow down) ######
+# ### unweighted genesbeta
+# s1 = seq(.6, 0.9, by = .1)
+# s2 = seq(.7, 0.9, by = .1)
+# s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
+# for (i in 1:nrow(s1s2)){
+#   CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, Omics_name = "genesbeta_Genus", ntrys = i)
+#   CV_lambda(X1 = genesbeta_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+#             CCcoef = NULL, s1 = s1s2[i,1], s2= s1s2[i,2],
+#             pen1 = 0.6, pen2 = 0.3)
+# }
+# 
+# ### weighted genesbeta
+# s1 = seq(.6, 0.9, by = .1)
+# s2 = seq(.7, 0.9, by = .1)
+# s1s2 = rbind(expand.grid(s1, s2), expand.grid(s1, s2), expand.grid(s1, s2))
+# for (i in 1:nrow(s1s2)){
+#   CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = c(10,1,10), Omics_name = "genesbeta_Genus", ntrys = i)
+#   CV_lambda(X1 = genesbeta_rlog[-n_na, ], X2 = mibi[-n_na, ], Y = LPS, K = 4, 
+#             CCcoef = c(10,1,10), s1 = s1s2[i,1], s2= s1s2[i,2],
+#             pen1 = 0.6, pen2 = 0.3)
+# }
