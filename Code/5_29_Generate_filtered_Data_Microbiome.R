@@ -369,7 +369,10 @@ load_filtered_micro_level_samples <- function(level, prevalence, RA, wd){
   mibi_filter_clr <-  mibi.set  %>% 
     dplyr::select(Lib, Taxa, clr) %>%
     spread(., Taxa, clr) %>% as.data.frame() %>% column_to_rownames("Lib")
-  return(list(mibi_filter_ra, mibi_filter_clr, data_ra, lib_s))
+  return(list(filtered_RA = mibi_filter_ra, 
+              filtered_clr = mibi_filter_clr, 
+              full_RA = data_ra, 
+              library_size = lib_s))
 }
 
 
