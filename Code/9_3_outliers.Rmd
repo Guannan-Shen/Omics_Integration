@@ -1,0 +1,245 @@
+---
+title: "outliers or not"
+author: "Guannan Shen"
+date: "September 4, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+library(magrittr)
+library(BiocStyle)
+library(SmCCNet)
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+## Test outliers
+
+```{r loaddata}
+# source functions 
+# source to get the load_filtered_micro_level function to get clr of RA
+source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
+# clean and transform transcriptome data, subset of genes
+source( paste0(dir, "Code/6_5_clean_transcriptome.R") )
+# clinical data 
+source( paste0(dir, "Code/6_5_clean_clinical.R") )
+# diagnostic plots and tables
+source( paste0(dir, "Code/ref_plots.R") )
+# outliers 
+source( paste0(dir, "Code/outliers.R") )
+# wrappers
+source( paste0(dir, "Code/wrappers.R") )
+# run smccnet
+source( paste0(dir, "Code/put_together.R") )
+
+########## Datasets #############
+#### phenotype contains ID ####
+clin <- rescaled_cli() 
+# where na in LPS
+n_na <-  which(is.na( clin$LPS ))
+sum(is.na( clin$CD14 ))
+# LPS and CD14 as dataframe
+LPS <- clin %>% select(LPS)
+CD14 <- clin %>% select(CD14)
+
+##### Transcriptome ######
+rna_isgs <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/coreISG")) ) %>% 
+             rescaled_rna(., rlog = T)
+# the isgs data
+isgs_rlog <- rna_isgs[[1]]
+# names
+colnames(isgs_rlog) <- rna_isgs[[2]]$Symbol
+
+rna_genesbeta <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/genesbeta")) ) %>% 
+             rescaled_rna(., rlog = T)
+# the isgs data
+genesbeta_rlog <- rna_genesbeta[[1]]
+# names
+colnames(genesbeta_rlog) <- rna_genesbeta[[2]]$Symbol
+
+
+######## microbiome ######
+#### Microbiome
+micro_data <- load_filtered_micro_level_samples("genus",  prevalence = 40, RA = 2, wd = "Ubuntu")
+names(micro_data)
+micro_clr <- micro_data[[2]] %>% as.data.frame()
+
+# rescale to mean 0 and variance 1 
+mibi <- rescale_microbiome(micro_clr)
+
+```
+
+
+
+```{r showoutliers}
+######### outliers in clinical parameter ##############
+# for lps 
+dot_groupby(clin, clin$LPS, clin$Group, 0.8, "HIV Status", "LPS")
+dot_groupby(clin, clin$LPS, 1, 0.8, "The whole cohort", "LPS")
+
+grubbs_wrapper(LPS[,1], 10)
+grubbs.test(LPS[,1], # a numeric vector for data values.
+            type = 10, # Integer value indicating test variant.
+            # 10 is a test for one outlier (side is detected automatically and can be reversed by opposite parameter).
+            # 11 is a test for two outliers on opposite tails, 20 is test for two outliers in one tail.
+            opposite = FALSE, # a logical indicating whether you want to check not the value with largest difference from the mean
+            two.sided = FALSE)
+
+dot_groupby(clin, clin$CD14, clin$Group, 0.8, "HIV Status", "CD14")
+dot_groupby(clin, clin$CD14, 1, 0.8, "The whole cohort", "CD14")
+
+# one outlier
+grubbs.test(CD14[,1], 
+          type = 10)
+# two opposite
+grubbs.test(CD14[,1], 
+          type = 11)
+
+# two ouliers
+grubbs.test(CD14[,1], 
+          type = 20)
+### test per group hiv ##
+grubbs_wrapper(LPS[,1], 10, "hiv")
+grubbs_wrapper(LPS[,1], 20, "hiv")
+grubbs_wrapper(CD14[,1], 10, "hiv")
+grubbs_wrapper(CD14[,1], 10, "control")
+grubbs_wrapper(CD14[,1], 20, "hiv")
+grubbs_wrapper(CD14[,1], 11, "hiv")
+####### outlier in mibi ############
+sapply(colnames(mibi)[1:10], FUN = function(x){
+  dot_groupby(mibi, mibi[,x], clin$Group, 0.8, "HIV Status", 
+              paste("Rescaled-clr of", x) )
+})
+
+sapply(colnames(mibi)[1:10], FUN = function(x){
+  dot_groupby(mibi, mibi[,x], 1, 0.8, "The whole cohort", 
+              paste("Rescaled-clr of", x) )
+})
+
+
+
+###### outlier in isgs_rlog #########
+sapply(colnames(isgs_rlog )[1:10], FUN = function(x){
+  dot_groupby(isgs_rlog , isgs_rlog[,x], clin$Group, 0.8, "HIV Status", 
+              paste("Rescaled-rlog of", x) )
+})
+
+sapply(colnames(isgs_rlog )[1:10], FUN = function(x){
+  dot_groupby(isgs_rlog , isgs_rlog[,x], 1, 0.8, "The whole cohort", 
+              paste("Rescaled-rlog of", x) )
+})
+
+
+############### subseting #############
+# microbiome whole cohort 
+whole_outmibi <- apply(mibi, 2, FUN = function(x){
+  ifelse(grubbs_wrapper(x, 10) == "Nonoutlier", TRUE, FALSE)
+})
+# 
+hiv_outmibi <- apply(mibi, 2, FUN = function(x){
+  ifelse(grubbs_wrapper(x, 10, "hiv") == "Nonoutlier", TRUE, FALSE)
+})
+sum(whole_outmibi)
+sum(hiv_outmibi)
+# BOTH outlier
+sum((whole_outmibi == FALSE) & (hiv_outmibi == FALSE) )
+# outlier as whole 
+sum((whole_outmibi == FALSE) & (hiv_outmibi == TRUE) )
+# BOTH outlier
+which((whole_outmibi == TRUE) & (hiv_outmibi == FALSE) )
+
+# test the one different between whole and per group
+sapply(colnames(mibi)[44], FUN = function(x){
+  dot_groupby(mibi, mibi[,x], clin$Group, 0.8, "HIV Status", 
+              paste("Rescaled-clr of", x) )
+})
+
+sapply(colnames(mibi)[44], FUN = function(x){
+  dot_groupby(mibi, mibi[,x], 1, 0.8, "The whole cohort", 
+              paste("Rescaled-clr of", x) )
+})
+################ subsetting only by whole ##############
+isgs_outlier <- apply(isgs_rlog, 2, FUN = function(x){
+  ifelse(grubbs_wrapper(x, 10) == "Nonoutlier", TRUE, FALSE)
+})
+dim(isgs_rlog)
+dim(isgs_rlog[, isgs_outlier])
+
+mibi_outlier <- apply(mibi, 2, FUN = function(x){
+  ifelse(grubbs_wrapper(x, 10) == "Nonoutlier", TRUE, FALSE)
+})
+dim(mibi)
+dim(mibi[, mibi_outlier])
+```
+```{r runsmccet}
+####### unweighted ######
+# with outliers 
+run_SmCCNet(isgs_rlog, mibi, LPS, 0.35, 0.1, 0.8, 0.9, NULL, n_na )
+# deleting all outliers
+run_SmCCNet(isgs_rlog[, isgs_outlier], mibi[, mibi_outlier], LPS, 
+            0.05, 0.05, 0.8, 0.9, NULL, n_na )
+run_SmCCNet(isgs_rlog[, isgs_outlier], mibi[, mibi_outlier], LPS, 
+            0.6, 0.05, 0.8, 0.9, NULL, n_na )
+```
+
+```{r test}
+apply(mibi, 2, FUN = function(x){
+  
+})
+```
+##Questions 
+1. How to filter the global level of host-transcriptome?
+2. Outlier test on SmCCNet ready data or midwhere of data prepocessing? 
+3. Outliers in clinical phenotype, delete some libraries?
