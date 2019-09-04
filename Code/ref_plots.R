@@ -67,6 +67,7 @@ box_values_group <- function(data, title){
                  aes(label=sprintf("%1.1f", ..y..) ), color = "black",
                  position=position_nudge(x=0.33), size = 4) +
     theme_bw() +
+    theme(legend.position="bottom", legend.box = "horizontal") +
     labs(caption = title) 
  
  print(p)
@@ -86,9 +87,10 @@ density_values_group <- function(data, title){
     geom_density(alpha = 0.5) +
     # gray scale color
     # grey scale plot
-    scale_colour_grey() +
-    scale_fill_grey() +
+    scale_colour_grey(start = 0.2, end = 0.8) +
+    scale_fill_grey(start = 0.2, end = 0.8) +
     theme_bw() +
+    theme(legend.position="bottom", legend.box = "horizontal") +
     labs(caption = title) 
   print(p)
   ggsave(filename =  paste0( title, "density.tiff"), device = NULL, 
@@ -111,6 +113,27 @@ check_skew <- function(df, title){
     labs(caption = title) 
   print(p)
 }
+####### scatter plot to check outliers ##############
+dot_groupby <- function(data, y, groupby, dotsize, xlab, ylab){
+  p = ggplot(data, aes(x=groupby, y=y)) + 
+    # dot plot
+    geom_dotplot(binaxis='y', stackdir='center', dotsize = dotsize)+
+    scale_colour_grey(start = 0.2, end = 0.8) +
+    theme_bw() +
+    # mean and 2 std
+    stat_summary(fun.data="mean_sdl", fun.args = list(mult=2), 
+                 geom="crossbar", width=0.3) +
+    labs(x = xlab, y = ylab)
+  print(p)
+}
+
+# test
+# dot_groupby(clin, clin$LPS, clin$Group, 0.8, "HIV Status", "LPS")
+# dot_groupby(clin, clin$LPS, 1, 0.8, "The whole cohort", "LPS")
+# 
+# dot_groupby(clin, clin$CD14, clin$Group, 0.8, "HIV Status", "CD14")
+# dot_groupby(clin, clin$CD14, 1, 0.8, "The whole cohort", "CD14")
+
 
 ## elbow plot of filtering microbiome 
 elbow_prev <- function(taxa_level, prev_vector, RA){
