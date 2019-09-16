@@ -1,6 +1,7 @@
 dir = "~/Documents/gitlab/Omics_Integration/"
 source( paste0(dir, "Code/ref_plots.R") )
 library(outliers)
+library(tidyverse)
 
 # clinical data 
 source( paste0(dir, "Code/6_5_clean_clinical.R") )
@@ -22,18 +23,36 @@ grubbs_wrapper <- function(x, type, hiv){
   if(missing(hiv)){
     grubbs = grubbs.test(x = x, 
                          type = type)
-    return( ifelse(grubbs$p.value < 0.05,
-                   "Outlier",
-                   "Nonoutlier") )
+    return(grubbs$p.value)
+    # return( ifelse(grubbs$p.value < 0.05,
+    #                "Outlier",
+    #                "Nonoutlier") )
   }
   else{
     grubbs = grubbs.test(x = x[clin$Group == hiv], 
                          type = type)
-    return( ifelse(grubbs$p.value < 0.05,
-                   "Outlier",
-                   "Nonoutlier") )
+    return(grubbs$p.value)
+    # return( ifelse(grubbs$p.value < 0.05,
+    #                "Outlier",
+    #                "Nonoutlier") )
   }
 }
+
+grubbs_df <- function(df, by, grubbs_type){
+  rawp = apply(df, by, FUN = function(x){
+    grubbs_wrapper(x, grubbs_type) 
+  })
+  fdr = p.adjust(rawp, method = "fdr")
+  bonferroni = p.adjust(rawp, method = "bonferroni")
+  return(data.frame(cbind(rawp, fdr, bonferroni)) )
+}
+
+# isgs_out <- grubbs_df(isgs_rlog, by = 2, grubbs_type = 10) %>% plyr::arrange(rawp)
+# sum(isgs_out$rawp <= 0.05)
+# sum(isgs_out$fdr <= 0.05)
+# sum(isgs_out$bonferroni <= 0.05)
+# ncol(isgs_rlog[, isgs_out$fdr <= 0.05])
+
 # ## test of functions 
 # apply(isgs_rlog, 2, FUN = function(x){
 #   grubbs_wrapper(x, 10)

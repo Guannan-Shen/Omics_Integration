@@ -211,15 +211,18 @@ sapply(colnames(mibi)[44], FUN = function(x){
               paste("Rescaled-clr of", x) )
 })
 ################ subsetting only by whole ##############
-isgs_outlier <- apply(isgs_rlog, 2, FUN = function(x){
-  ifelse(grubbs_wrapper(x, 10) == "Nonoutlier", TRUE, FALSE)
+apply(isgs_rlog, 2, FUN = function(x){
+  grubbs_wrapper(x, 10) 
 })
+isgs_out <- grubbs_df(isgs_rlog, by = 2, grubbs_type = 10)
+isgs_outlier <- isgs_out$fdr > 0.05
+
 dim(isgs_rlog)
 dim(isgs_rlog[, isgs_outlier])
 
-mibi_outlier <- apply(mibi, 2, FUN = function(x){
-  ifelse(grubbs_wrapper(x, 10) == "Nonoutlier", TRUE, FALSE)
-})
+mibi_out <- grubbs_df(mibi, by = 2, grubbs_type = 10)
+mibi_outlier <- mibi_out$fdr > 0.05
+
 dim(mibi)
 dim(mibi[, mibi_outlier])
 ```
