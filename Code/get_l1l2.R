@@ -11,3 +11,5 @@ CV_lambda(X1 = isgs_rlog[-n_na, isgs_outlier], X2 = mibi[-n_na, mibi_outlier],
           K = 4,
           CCcoef = NULL, s1 = 0.8, s2= 0.9,
           pen1 = 0.6, pen2 = 0.6)
+
+## 

@@ -1,0 +1,172 @@
+---
+title: "Global Level Host-trans Micro Integration"
+author: "Guannan Shen"
+date: "September 16, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+library(magrittr)
+library(BiocStyle)
+library(SmCCNet)
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+# Preprocessing 
+
+```{r loaddata}
+# source functions 
+# source to get the load_filtered_micro_level function to get clr of RA
+source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
+# clean and transform transcriptome data, subset of genes
+source( paste0(dir, "Code/6_5_clean_transcriptome.R") )
+# clinical data 
+source( paste0(dir, "Code/6_5_clean_clinical.R") )
+# diagnostic plots and tables
+source( paste0(dir, "Code/ref_plots.R") )
+# outliers 
+source( paste0(dir, "Code/outliers.R") )
+# wrappers
+source( paste0(dir, "Code/wrappers.R") )
+# run smccnet
+source( paste0(dir, "Code/put_together.R") )
+# subset global rna-seq by mean, var
+source( paste0(dir, "Code/generate_genelist.R") )
+
+########## Datasets #############
+#### phenotype contains ID ####
+clin <- rescaled_cli() 
+CD14 <- clin %>% select(CD14)
+anyNA(CD14)
+
+######### Transcriptome ###############
+##### Transcriptome ######
+rna_isgs <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/coreISG")) ) %>% 
+             rescaled_rna(., rlog = T)
+# the isgs data
+isgs_rlog <- rna_isgs[[1]]
+# names
+colnames(isgs_rlog) <- rna_isgs[[2]]$Symbol
+######## genes beta
+rna_genesbeta <- as.data.frame(read.delim( paste0(dir, 
+                "DataRaw/hiv_infected_un/genesbeta")) ) %>% 
+             rescaled_rna(., rlog = T)
+genesbeta_rlog <- rna_genesbeta[[1]]
+colnames(genesbeta_rlog) <- rna_genesbeta[[2]]$Symbol
+#### global filtered #######3
+mean_cut <- 10
+var_cut <- 5
+filtered_rna <- filter_rescale_rna(mean_cut, var_cut, T)
+filtered_rlog <- filtered_rna[[1]]
+colnames(filtered_rlog) <- filtered_rna[[2]]$Symbol
+print(ncol(filtered_rlog))
+
+#### Microbiome ##########
+micro_data <- load_filtered_micro_level_samples("genus",  
+                                                prevalence = 40, RA = 2, wd = "Ubuntu")
+micro_clr <- micro_data[[2]] %>% as.data.frame()
+# rescale to mean 0 and variance 1 
+mibi <- rescale_microbiome(micro_clr)
+
+print("Before outlier test, core-ISGs 246, beta-ISG 406, Transcriptome 8866, Genus Microbiome 54")
+########## outlier test  #########
+# by = 2, type 10 
+# get the boolean mask vector
+isgs_outlier <- grubbs_df(isgs_rlog, 2, 10)$fdr > 0.05
+genesbeta_outlier <- grubbs_df(genesbeta_rlog, 2, 10)$fdr > 0.05
+filtered_outlier <- grubbs_df(filtered_rlog, 2, 10)$fdr > 0.05
+
+mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
+# subset by outlier test
+dim(isgs_rlog[, isgs_outlier])
+dim(genesbeta_rlog[, genesbeta_outlier])
+dim(filtered_rlog[, filtered_outlier])
+
+ncol(mibi[ , mibi_outlier])
+print("After outlier test, core-ISGs 203, beta-ISG 405, Transcriptome 8838, Genus Microbiome 44")
+```
+# Cross Validation to define penalties
+```{r cvl1l2}
+
+```
+
+# Clustering of Clinical Phenotypes 
+
+```{r exploreClin, fig.width= 10, fig.height=8}
+# clin[, c(6:18, 25)]
+# standardized to mean 0 var 1
+df <- clin[, c(6:18, 25)]
+clinical_names <- c("Blood CD4 T Cell Counts (cells/ul)", "Plasma Viral Load", 
+                    "Tissue HIV RNA (per CD4 T cell)",
+                    "Tissue CD4 T Cell Counts (number/g)", "IL-6 (pg/ml)", "CRP (ug/ml)", "iFABP (pg/ml)",
+                    "sCD27 (U/ml)", "CD14 (ng/ml)", "LPS (pg/ml)", "LTA (OD)", 
+                    base::paste("IFN", '\u03b1', sep = "" ),  base::paste("IFN", '\u03b2', sep = "" ),
+                    "CD4 T cells (% viable CD45+ cells)")
+colnames(df) <- clinical_names
+density_values_ind(df %>% stack(), "Density plot of clinical phenotypes")
+
+clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
+# clin_pearson <- cor_heatmap(df, "spearman", TRUE, "complete", text_size = 3)
+
+```
+
+## CRP is not correlated with LPS/CD14
+
+```{r crp}
+CRP <- clin %>% select(CRP)
+# no missing 
+anyNA(CRP)
+```

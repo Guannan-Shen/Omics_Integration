@@ -76,20 +76,20 @@ get_tmm <- function(){
   return(list(df = df, sym = gene_ID_Sym))
 }
 
-#variance 
-var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame() 
-colnames(var_tmm) <- "values"
-var_tmm <- var_tmm %>% filter(values < 30)
-
-var_rlog <- get_rlog()$df %>% apply(., 2, var) %>% as.data.frame() 
-colnames(var_rlog) <- "values"
-# mean
-mean_rlog <- get_rlog()$df %>% apply(., 2, mean) %>% as.data.frame() 
-colnames(mean_rlog) <- "values"
-
-mean_tmm <- get_tmm()$df %>% apply(., 2, mean) %>% as.data.frame() 
-colnames(mean_tmm) <- "values"
-mean_tmm <- mean_tmm %>% filter(values < 50)
+# #variance 
+# var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame() 
+# colnames(var_tmm) <- "values"
+# var_tmm <- var_tmm %>% filter(values < 30)
+# 
+# var_rlog <- get_rlog()$df %>% apply(., 2, var) %>% as.data.frame() 
+# colnames(var_rlog) <- "values"
+# # mean
+# mean_rlog <- get_rlog()$df %>% apply(., 2, mean) %>% as.data.frame() 
+# colnames(mean_rlog) <- "values"
+# 
+# mean_tmm <- get_tmm()$df %>% apply(., 2, mean) %>% as.data.frame() 
+# colnames(mean_tmm) <- "values"
+# mean_tmm <- mean_tmm %>% filter(values < 50)
 # density plot
 density_values <- function(data){
   p = ggplot(data, aes(x = values)) + 
@@ -108,10 +108,10 @@ density_values <- function(data){
   print(p)
 }
 
-density_values(var_rlog)
-density_values(var_tmm   )
-density_values(mean_rlog)
-density_values(mean_tmm )
+# density_values(var_rlog)
+# density_values(var_tmm   )
+# density_values(mean_rlog)
+# density_values(mean_tmm )
 
 elbow_var_tmm <- function(vars_cutoffs){
   # get the data, tmm
@@ -138,46 +138,58 @@ elbow_mean_tmm <- function(means_cutoffs){
 }
 
 ##### elbow plot of variance cutoff
-vars_cutoffs <- c(0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)
-n_features <- elbow_var_tmm(vars_cutoffs )
-coords <- paste("(", vars_cutoffs, ", ", n_features, ")", sep="")
-coords
-
-p = ggplot(mapping =  aes(x = vars_cutoffs, y = n_features )) + 
-  theme_bw() +
-  geom_line() +
-  labs(x = paste("Variance Cutoffs"),
-       y = paste0("Number of Genes") ) + 
-  geom_label(aes(x = vars_cutoffs, y = n_features , label=coords))
-
-print(p)
-
-
-means_cutoffs <- c(0,  1,  2,  3,  4,  5, 6, 7, 8, 9, 10)
-n_features <- elbow_mean_tmm(means_cutoffs )
-coords <- paste("(", means_cutoffs, ", ", n_features, ")", sep="")
-coords
-
-p = ggplot(mapping =  aes(x = means_cutoffs, y = n_features )) + 
-  theme_bw() +
-  geom_line() +
-  labs(x = paste("Mean Cutoffs"),
-       y = paste0("Number of Genes") ) + 
-  geom_label(aes(x = means_cutoffs, y = n_features , label=coords))
-
-print(p)
+# vars_cutoffs <- c(0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)
+# n_features <- elbow_var_tmm(vars_cutoffs )
+# coords <- paste("(", vars_cutoffs, ", ", n_features, ")", sep="")
+# coords
+# 
+# p = ggplot(mapping =  aes(x = vars_cutoffs, y = n_features )) + 
+#   theme_bw() +
+#   geom_line() +
+#   labs(x = paste("Variance Cutoffs"),
+#        y = paste0("Number of Genes") ) + 
+#   geom_label(aes(x = vars_cutoffs, y = n_features , label=coords))
+# 
+# print(p)
+# 
+# 
+# means_cutoffs <- c(0,  1,  2,  3,  4,  5, 6, 7, 8, 9, 10)
+# n_features <- elbow_mean_tmm(means_cutoffs )
+# coords <- paste("(", means_cutoffs, ", ", n_features, ")", sep="")
+# coords
+# 
+# p = ggplot(mapping =  aes(x = means_cutoffs, y = n_features )) + 
+#   theme_bw() +
+#   geom_line() +
+#   labs(x = paste("Mean Cutoffs"),
+#        y = paste0("Number of Genes") ) + 
+#   geom_label(aes(x = means_cutoffs, y = n_features , label=coords))
+# 
+# print(p)
 #############3 variance 2 mean 5 of TMM ###############
 ## 
-filtered_trans <- get_tmm()$df %>% select_if(~mean(.) > 5) %>% select_if(~var(.) > 2) %>% 
-            t %>% as.data.frame() %>% rownames_to_column("Gene_ID")
-dim(filtered_trans)
-write.csv(filtered_trans, "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/filtered_transcriptome.csv", 
-          row.names = FALSE)
+# mean_cut <- 5
+# var_cut <- 2
+# filtered_trans <- get_tmm()$df %>% select_if(~mean(.) > mean_cut) %>% select_if(~var(.) > var_cut) %>% 
+#             t %>% as.data.frame() %>% rownames_to_column("Gene_ID")
+# dim(filtered_trans)
+# # write.csv(filtered_trans, "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/filtered_transcriptome.csv", 
+# #           row.names = FALSE)
+# 
+# filtered_rna <-  rescaled_rna(filtered_trans, rlog = T)
+# filtered_rlog <- filtered_rna[[1]]
+# dim(filtered_rlog)
+# 
+# mean_cut <- 10
+# var_cut <- 5
+# filtered_trans <- get_tmm()$df %>% select_if(~mean(.) > mean_cut) %>% select_if(~var(.) > var_cut) %>% 
+#   t %>% as.data.frame() %>% rownames_to_column("Gene_ID")
+# dim(filtered_trans)
 
+filter_rescale_rna <- function(mean_cut, var_cut, rlog){
+  filtered_trans = get_tmm()$df %>% select_if(~mean(.) > mean_cut) %>% select_if(~var(.) > var_cut) %>% 
+    t %>% as.data.frame() %>% rownames_to_column("Gene_ID") %>% rescaled_rna(., rlog = rlog)
+  return(filtered_trans)
+}
 
-dir = "~/Documents/gitlab/Omics_Integration/"
-filtered_rna <- as.data.frame(read.csv( paste0(dir, 
-                  "DataRaw/hiv_infected_un/filtered_transcriptome.csv")) ) %>% rescaled_rna(., rlog = T)
-filtered_rlog <- filtered_rna[[1]]
-dim(filtered_rlog)
-
+# filtered_rlog <- filter_rescale_rna(10, 5, T)
