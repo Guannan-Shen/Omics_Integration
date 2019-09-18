@@ -65,7 +65,7 @@ get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name, ntrys){
 }
 
 ######### run CV ##################
-CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2, pen1, pen2){
+CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2, pen1, pen2, NoTrait, bytrait){
   #
   print("K fold and K threads!")
   # Set a CV directory.
@@ -140,8 +140,8 @@ parSapply(cl, 1:K, function(CVidx){
     
     # Run SmCCA on the subsamples (Figure 1, Step II)
     Ws <- getRobustPseudoWeights(x1.train, x2.train, yy.train, l1, l2, 
-                                 s1, s2, NoTrait = FALSE,
-                                 FilterByTrait = FALSE, 
+                                 s1, s2, NoTrait = NoTrait,
+                                 FilterByTrait = bytrait, 
                                  SubsamplingNum = SubsamplingNum, 
                                  CCcoef = CCcoef)
     
