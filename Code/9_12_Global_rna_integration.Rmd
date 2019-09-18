@@ -89,9 +89,15 @@ source( paste0(dir, "Code/generate_genelist.R") )
 ########## Datasets #############
 #### phenotype contains ID ####
 clin <- rescaled_cli() 
-CD14 <- clin %>% select(CD14)
+CD14 <- clin %>% dplyr::select(CD14)
 anyNA(CD14)
 
+# disease status
+HIV <- ifelse(clin$Group == "hiv", 1, 0) %>% as.data.frame()
+colnames(HIV) <- "HIV"
+
+LPS <- clin %>% select(LPS)
+n_na <- which(is.na(LPS))
 ######### Transcriptome ###############
 ##### Transcriptome ######
 rna_isgs <- as.data.frame(read.delim( paste0(dir, "DataRaw/hiv_infected_un/coreISG")) ) %>% 
@@ -107,8 +113,9 @@ rna_genesbeta <- as.data.frame(read.delim( paste0(dir,
 genesbeta_rlog <- rna_genesbeta[[1]]
 colnames(genesbeta_rlog) <- rna_genesbeta[[2]]$Symbol
 #### global filtered #######3
-mean_cut <- 10
-var_cut <- 5
+mean_cut <- 100
+var_cut <- 50
+dim(get_tmm()$df)
 filtered_rna <- filter_rescale_rna(mean_cut, var_cut, T)
 filtered_rlog <- filtered_rna[[1]]
 colnames(filtered_rlog) <- filtered_rna[[2]]$Symbol
@@ -121,7 +128,7 @@ micro_clr <- micro_data[[2]] %>% as.data.frame()
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)
 
-print("Before outlier test, core-ISGs 246, beta-ISG 406, Transcriptome 8866, Genus Microbiome 54")
+print("Before outlier test, core-ISGs 246, beta-ISG 406, Transcriptome 1905, Genus Microbiome 54")
 ########## outlier test  #########
 # by = 2, type 10 
 # get the boolean mask vector
@@ -136,12 +143,69 @@ dim(genesbeta_rlog[, genesbeta_outlier])
 dim(filtered_rlog[, filtered_outlier])
 
 ncol(mibi[ , mibi_outlier])
-print("After outlier test, core-ISGs 203, beta-ISG 405, Transcriptome 8838, Genus Microbiome 44")
+print("After outlier test, core-ISGs 203, beta-ISG 405, Transcriptome 1894, Genus Microbiome 44")
 ```
 # Cross Validation to define penalties
-```{r cvl1l2}
+```{r cvl1l2, include=FALSE, eval=FALSE}
 
 ```
+
+# Run SmCCNet
+## With CD14
+```{r SmCCNet}
+########## with CD14 #############3
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "CD14_Outlier3_Global_100_50_Genus_3_4foldCV/"
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/CD14_Outlier3_Global_100_50_Genus_3_4foldCV/"
+# edge Cut 0
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = CD14,
+            l1 = 0.2, 
+            l2 = 0.75, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            # n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = FALSE,
+            EdgeCut = 0)
+
+
+######3 edge Cut 0.1 
+load(paste0(dir, "SmCCNetWeights.RData"))
+edgecut_by(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 0.1)
+
+
+```
+
+## Without CD14
+
+```{r twoomics}
+########## with CD14 #############3
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "_Outlier1_Global_100_50_Genus_1_4foldCV/"
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/_Outlier1_Global_100_50_Genus_1_4foldCV/"
+########## without CD14 ###########
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = NULL,
+            l1 = 0.5, 
+            l2 = 0.1, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            # n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = TRUE,
+            EdgeCut = 0)
+
+######3 edge Cut 0.1 
+load(paste0(dir, "SmCCNetWeights.RData"))
+edgecut_by(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 0.1)
+```
+
+
 
 # Clustering of Clinical Phenotypes 
 
@@ -169,4 +233,52 @@ clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
 CRP <- clin %>% select(CRP)
 # no missing 
 anyNA(CRP)
+
+########## with CRP #############3
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "CRP_Outlier1_Global_100_50_Genus_1_4foldCV/"
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = CRP,
+            l1 = 0.1, 
+            l2 = 0.05, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            # n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = FALSE,
+            EdgeCut = 0)
+
+######3 edge Cut 0.1 
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/CRP_Outlier1_Global_100_50_Genus_1_4foldCV/"
+load(paste0(dir, "SmCCNetWeights.RData"))
+edgecut_by(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 0.1)
+```
+
+# LPS
+
+```{r lps}
+LPS <- clin %>% select(LPS)
+n_na <- which(is.na(LPS))
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = LPS,
+            l1 = 0.1, 
+            l2 = 0.1, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = FALSE,
+            EdgeCut = 0)
+
+######3 edge Cut 0.1 
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
+load(paste0(dir, "SmCCNetWeights.RData"))
+edgecut_by(filtered_rlog[-n_na, filtered_outlier], mibi[-n_na, mibi_outlier], 0.1)
+
 ```

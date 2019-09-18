@@ -22,20 +22,42 @@ check_standardize(genesbeta_rlog[, genesbeta_outlier], mibi[, mibi_outlier],
                   data.frame(CD14), K = 4)
 check_standardize(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
                   data.frame(CD14), K = 4)
-####### CD14, genus microbiome 40, 2, global rna mean 10, var 5, outlier fdr 0.05 #######
+####### CD14, genus microbiome 40, 2, global rna mean 100, var 50, outlier fdr 0.05 #######
 CVDir <- get_CVDir(Y = CD14, K = 4, CCcoef = NULL, 
-                   Omics_name = "Outlier1_Global_10_5_Genus", ntrys = 1)
+                   Omics_name = "Outlier3_Global_100_50_Genus", ntrys = 3)
 
 CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
           data.frame(CD14), 
           K = 4,
           CCcoef = NULL, s1 = 0.7, s2= 0.9,
-          pen1 = 0.6, pen2 = 0.6,
+          pen1 = 0.3, pen2 = 0.9,
           NoTrait = FALSE)
 
-####### without CD14, genus microbiome 40, 2, global rna mean 10, var 5, outlier fdr 0.05 #######
+####### CRP, genus microbiome 40, 2, global rna mean 100, var 50, outlier fdr 0.05 #######
+CVDir <- get_CVDir(Y = CRP, K = 4, CCcoef = NULL, 
+                   Omics_name = "Outlier1_Global_100_50_Genus", ntrys = 1)
+
+CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
+          data.frame(CRP), 
+          K = 4,
+          CCcoef = NULL, s1 = 0.7, s2= 0.9,
+          pen1 = 0.8, pen2 = 0.3,
+          NoTrait = FALSE)
+
+############ LPS genus microbiome 40, 2, global rna mean 100, var 50, outlier fdr 0.05 #######
+CVDir <- get_CVDir(Y = LPS, K = 4, CCcoef = NULL, 
+                   Omics_name = "Outlier1_Global_100_50_Genus", ntrys = 1)
+
+CV_lambda(X1 = filtered_rlog[-n_na, filtered_outlier], X2 = mibi[-n_na, mibi_outlier], 
+          Y = data.frame(LPS[-n_na, ]), 
+          K = 4,
+          CCcoef = NULL, s1 = 0.7, s2= 0.9,
+          pen1 = 0.5, pen2 = 0.7,
+          NoTrait = FALSE)
+
+####### without CD14, genus microbiome 40, 2, global rna mean 100, var 50, outlier fdr 0.05 #######
 CVDir <- get_CVDir(Y = NULL, K = 4, CCcoef = NULL, 
-                   Omics_name = "Outlier1_Global_10_5_Genus", ntrys = 1)
+                   Omics_name = "Outlier1_Global_100_50_Genus", ntrys = 1)
 
 CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
           data.frame(CD14), 
@@ -44,19 +66,32 @@ CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier],
           pen1 = 0.6, pen2 = 0.6,
           NoTrait = TRUE)
 
-### without phenotype, isgs
-run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
-            X2 = mibi[, mibi_outlier],
-            Y = NULL,
-            l1 = 0.6, 
-            l2 = 0.05, 
-            s1 = 0.8, 
-            s2 = 0.9, 
-            weights = NULL,
-            # n_na = n_na,
-            # NoTrait itself is to control whether to use Y or not 
-            NoTrait = TRUE,
-            EdgeCut = 0)
+###### with HIV status ###########
+
+CVDir <- get_CVDir(Y = HIV, K = 4, CCcoef = NULL, 
+                   Omics_name = "Outlier_Global_100_50_Genus", ntrys = 1)
+
+CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
+          data.frame(HIV), 
+          K = 4,
+          CCcoef = NULL, s1 = 0.7, s2= 0.9,
+          pen1 = 0.8, pen2 = 0.8,
+          NoTrait = FALSE,
+          bytrait = TRUE)
+
+# ### withCD14 global
+# run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+#             X2 = mibi[, mibi_outlier],
+#             Y = CD14,
+#             l1 = 0.4, 
+#             l2 = 0.1, 
+#             s1 = 0.7, 
+#             s2 = 0.9, 
+#             weights = NULL,
+#             # n_na = n_na,
+#             # NoTrait itself is to control whether to use Y or not 
+#             NoTrait = FALSE,
+#             EdgeCut = 0)
 
 # ############## test run #################
 # X1 = filtered_rlog[, filtered_outlier]
