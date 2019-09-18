@@ -37,7 +37,7 @@ rescaled_cli <- function(){
   # clean and transform transcriptome data, subset of genes
   source("~/Documents/gitlab/Omics_Integration/Code/6_5_clean_transcriptome.R")
   # rlog transform or not
-  rnaseq = rescaled_rna(rlog = T)[[1]] %>% rownames_to_column("pid") %>% select(pid)
+  rnaseq = rescaled_rna(rlog = T)[[1]] %>% rownames_to_column("pid") %>% dplyr::select(pid)
   # plyr::join keep the order of the left dataset
   results = plyr::join(rnaseq, df, by = "pid" )
   colnames(results)[1] = "ID"
