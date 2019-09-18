@@ -35,7 +35,9 @@ kegg_enrichr <- function(genelist){
   # the usage of call "$" and eval 
   pathways = enrichr( genelist, "KEGG_2019_Human")
   # data
-  kegg = data.frame( pathways[["KEGG_2019_Human"]] )
+  kegg = data.frame( pathways[["KEGG_2019_Human"]] ) %>%
+    dplyr::filter(Adjusted.P.value <= 0.2) %>% dplyr::arrange(P.value) %>% 
+    dplyr::select(Term, Overlap, Adjusted.P.value, Genes)
   return( kegg )
 }
 
@@ -46,30 +48,32 @@ GOCC_enrichr <- function(genelist){
   # the usage of call "$" and eval 
   pathways = enrichr( genelist, "GO_Cellular_Component_2018")
   # data
-  kegg = data.frame( pathways[["GO_Cellular_Component_2018"]] )
+  kegg = data.frame( pathways[["GO_Cellular_Component_2018"]] )%>%
+    dplyr::filter(Adjusted.P.value <= 0.2) %>% dplyr::arrange(P.value)  %>% 
+    dplyr::select(Term, Overlap, Adjusted.P.value, Genes)
   return( kegg )
 }
 
 
 ##############33 test dataset ###################
 
-# with CD 14
-dir = "~/Documents/gitlab/Omics_Integration/DataProcessed/CD14_Outlier1_Global_100_50_Genus_1_4foldCV"
+# # with CD 14
+# dir = "~/Documents/gitlab/Omics_Integration/DataProcessed/CD14_Outlier1_Global_100_50_Genus_1_4foldCV/"
 
 # # without CD 14
-# dir = "~/Documents/gitlab/Omics_Integration/DataProcessed/_Outlier1_Global_100_50_Genus_1_4foldCV"
+# dir = "~/Documents/gitlab/Omics_Integration/DataProcessed/_Outlier1_Global_100_50_Genus_1_4foldCV/"
 
-load(paste0(dir, "/SmCCNetWeights.RData"))
-dim(abar) # similarity matrix
-n_networks <- length(modules)
-features <- colnames(abar)    # gene symbol
-for (i in 1:n_networks){
-  
-}
+# load(paste0(dir, "SmCCNetWeights.RData"))
+# dim(abar) # similarity matrix
+# n_networks <- length(modules)
+# features <- colnames(abar)    # gene symbol
+# for (i in 1:n_networks){
+#   
+# }
 
-clusterPro_GO(features[modules[[1]]], "CC", fdrcut = 0.2)
-kegg_enrichr(features[modules[[1]]])
-GOCC_enrichr(features[modules[[1]]])
+# clusterPro_GO(features[modules[[1]]], "CC", fdrcut = 0.2)
+# kegg_enrichr(features[modules[[1]]])
+# GOCC_enrichr(features[modules[[1]]])
 
 
 ######## find most connected hubs #############
@@ -87,5 +91,31 @@ top_hubs_bymean <- function(abar, modules_i, n){
   return(final)
 }
 
-top_hubs_bymean(abar, modules[[1]], 10)
+# top_hubs_bymean(abar, modules[[1]], 10)
+
+summary_networks <- function(abar, modules, p1){
+  print(dim(abar)) # similarity matrix
+  n_networks <- length(modules)
+  features <- colnames(abar)
+  
+  for ( i in 1:n_networks){
+    print("Total nodes:")
+    print(length(modules[[i]]))
+    top_hubs_bymean(abar, modules[[i]], n = 20) %>% kable %>% print()
+  }
+  
+  # genelists 
+  
+  for ( i in 1:n_networks){
+    # gene index 
+    index = modules[[i]] [modules[[i]] <= p1]
+    genes = features[index]
+    print(i)
+    print("KEGG")
+    kegg_enrichr( genes) %>% kable %>% print()
+    print("GO Cellular Component")
+    GOCC_enrichr( genes) %>% kable %>% print()
+  }
+  
+}
 
