@@ -76,21 +76,27 @@ get_tmm <- function(){
   return(list(df = df, sym = gene_ID_Sym))
 }
 
-# #variance 
-# var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame() 
+# #variance
+# var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame()
 # colnames(var_tmm) <- "values"
-# var_tmm <- var_tmm %>% filter(values < 30)
+# var_tmm <- var_tmm %>% filter(values < 100)
 # 
-# var_rlog <- get_rlog()$df %>% apply(., 2, var) %>% as.data.frame() 
+# var_rlog <- get_rlog()$df %>% apply(., 2, var) %>% as.data.frame()
 # colnames(var_rlog) <- "values"
 # # mean
-# mean_rlog <- get_rlog()$df %>% apply(., 2, mean) %>% as.data.frame() 
+# mean_rlog <- get_rlog()$df %>% apply(., 2, mean) %>% as.data.frame()
 # colnames(mean_rlog) <- "values"
 # 
-# mean_tmm <- get_tmm()$df %>% apply(., 2, mean) %>% as.data.frame() 
+# mean_tmm <- get_tmm()$df %>% apply(., 2, mean) %>% as.data.frame()
 # colnames(mean_tmm) <- "values"
-# mean_tmm <- mean_tmm %>% filter(values < 50)
-# density plot
+# mean_tmm <- mean_tmm %>% filter(values < 100)
+
+# var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame()
+# colnames(var_tmm) <- "values"
+# mean_tmm <- get_tmm()$df %>% apply(., 2, mean) %>% as.data.frame()
+# colnames(mean_tmm) <- "values"
+
+## density plot
 density_values <- function(data){
   p = ggplot(data, aes(x = values)) + 
     # alpha controls the transparency 
@@ -108,9 +114,9 @@ density_values <- function(data){
   print(p)
 }
 
-# density_values(var_rlog)
+# # density_values(var_rlog)
 # density_values(var_tmm   )
-# density_values(mean_rlog)
+# # density_values(mean_rlog)
 # density_values(mean_tmm )
 
 elbow_var_tmm <- function(vars_cutoffs){
