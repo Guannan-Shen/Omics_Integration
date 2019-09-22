@@ -1,0 +1,172 @@
+---
+title: "Hubs and Enrichment analysis"
+author: "Guannan Shen"
+date: "September 17, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+library(magrittr)
+library(BiocStyle)
+library(SmCCNet)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(enrichR)
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+# Summary Hubs
+
+```{r cutmeanHubs}
+# subset global rna-seq by mean, var
+dir = "~/Documents/gitlab/Omics_Integration/"
+source( paste0(dir, "Code/enrichment.R") )
+
+# source to get the load_filtered_micro_level function to get clr of RA
+source( paste0(dir, "Code/5_29_Generate_filtered_Data_Microbiome.R") )
+# clean and transform transcriptome data, subset of genes
+source( paste0(dir, "Code/6_5_clean_transcriptome.R") )
+# subset global rna-seq by mean, var
+source( paste0(dir, "Code/generate_genelist.R") )
+# outliers 
+source( paste0(dir, "Code/outliers.R") )
+
+#### global filtered #######3
+mean_cut <- 100
+var_cut <- 50
+dim(get_tmm()$df)
+filtered_rna <- filter_rescale_rna(mean_cut, var_cut, T)
+filtered_rlog <- filtered_rna[[1]]
+colnames(filtered_rlog) <- filtered_rna[[2]]$Symbol
+print(ncol(filtered_rlog))
+
+#### Microbiome ##########
+micro_data <- load_filtered_micro_level_samples("genus",  
+                                                prevalence = 40, RA = 2, wd = "Ubuntu")
+micro_clr <- micro_data[[2]] %>% as.data.frame()
+# rescale to mean 0 and variance 1 
+mibi <- rescale_microbiome(micro_clr)
+
+filtered_outlier <- grubbs_df(filtered_rlog, 2, 10)$fdr > 0.05
+
+mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
+
+# number of features 
+p1 <-  ncol(filtered_rlog[, filtered_outlier])
+p2 <-  ncol(mibi[, mibi_outlier])
+```
+
+```{r enri}
+dir = "~/Documents/gitlab/Omics_Integration/"
+source( paste0(dir, "Code/enrichment.R") )
+```
+
+## CD14, global 
+
+```{r cd14}
+# load similarity matrix (abar) and modules
+p1 <-  ncol(filtered_rlog[, filtered_outlier])
+p2 <-  ncol(mibi[, mibi_outlier])
+
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/CD14_Outlier3_Global_100_50_Genus_3_4foldCV/"
+
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+summary_networks(abar, modules, p1)
+
+```
+
+## Only two omics
+
+```{r two_omics}
+# load similarity matrix (abar) and modules
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/_Outlier1_Global_100_50_Genus_1_4foldCV/"
+
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+summary_networks(abar, modules, p1)
+
+```
+
+
+## CRP
+
+```{r crp}
+# load similarity matrix (abar) and modules
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/CRP_Outlier1_Global_100_50_Genus_1_4foldCV/"
+
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+summary_networks(abar, modules, p1)
+
+```
+
+## LPS
+
+```{r lps}
+# load similarity matrix (abar) and modules
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
+
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+summary_networks(abar, modules, p1)
+
+```
+
+
+
+
+
