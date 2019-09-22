@@ -69,13 +69,13 @@ CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier],
 ###### with HIV status ###########
 
 CVDir <- get_CVDir(Y = HIV, K = 4, CCcoef = NULL, 
-                   Omics_name = "Outlier_Global_100_50_Genus", ntrys = 1)
+                   Omics_name = "Outlier_11_Global_100_50_Genus", ntrys = 2)
 
 CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
           data.frame(HIV), 
           K = 4,
           CCcoef = NULL, s1 = 0.7, s2= 0.9,
-          pen1 = 0.8, pen2 = 0.8,
+          pen1 = 1, pen2 = 1,
           NoTrait = FALSE,
           bytrait = TRUE)
 
