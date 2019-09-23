@@ -96,6 +96,9 @@ anyNA(CD14)
 HIV <- ifelse(clin$Group == "hiv", 1, 0) %>% as.data.frame()
 colnames(HIV) <- "HIV"
 
+## LTA
+clin$LTA
+
 LPS <- clin %>% select(LPS)
 n_na <- which(is.na(LPS))
 ######### Transcriptome ###############
@@ -282,3 +285,29 @@ load(paste0(dir, "SmCCNetWeights.RData"))
 edgecut_by(filtered_rlog[-n_na, filtered_outlier], mibi[-n_na, mibi_outlier], 0.1)
 
 ```
+
+
+# HIV Status 
+
+```{r hiv_status}
+# disease status
+HIV <- ifelse(clin$Group == "hiv", 1, 0) %>% as.data.frame()
+colnames(HIV) <- "HIV"
+```
+
+# LTA
+
+```{r lta}
+# get this feature
+LTA <- clin %>% dplyr::select(LTA)
+anyNA(LTA)
+
+```
+
+
+# Together
+
+```{r toge}
+
+```
+

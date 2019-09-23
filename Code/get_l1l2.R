@@ -79,6 +79,19 @@ CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier],
           NoTrait = FALSE,
           bytrait = TRUE)
 
+############# using LTA as phenotype ##########
+CVDir <- get_CVDir(Y = LTA, K = 4, CCcoef = NULL, 
+                   Omics_name = "Outlier_Global_100_50_Genus", ntrys = 1)
+
+CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
+          data.frame(LTA), 
+          K = 4,
+          CCcoef = NULL, s1 = 0.7, s2= 0.9,
+          pen1 = 1, pen2 = 1,
+          NoTrait = FALSE,
+          bytrait = FALSE)
+
+
 # ### withCD14 global
 # run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
 #             X2 = mibi[, mibi_outlier],
