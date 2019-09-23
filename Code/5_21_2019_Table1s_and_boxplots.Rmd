@@ -123,6 +123,14 @@ meta_table1 <- function(meta){
                 ~ mean_sd(as.numeric(Plasma_VL), na_rm =  TRUE, digits = 0, denote_sd = "paren"),
               "Plasma IL-6 (pg/ml) " = 
                 ~ mean_sd(Plasma_IL.6, na_rm =  TRUE, digits = 2, denote_sd = "paren"),
+              
+                            
+
+               "Soluble CD14 (pg/ml), mean(SD)" = 
+                ~ mean_sd(Plasma_sCD14, na_rm =  TRUE, digits = 2, denote_sd = "paren"),
+                  "Plasma LTA (pg/ml), mean(SD)" = 
+                ~ mean_sd(Plasma_LTA, na_rm =  TRUE, digits = 2, denote_sd = "paren"),
+              
               "Plasma LPS (pg/ml) Non-Missing No.;" = 
                 ~ mean_sd(as.numeric(Plasma_LPS), na_rm =  TRUE, digits = 2, denote_sd = "paren")
               )
