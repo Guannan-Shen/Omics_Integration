@@ -197,6 +197,8 @@ S1 <- rowMeans(testCC)
 S2 <- rowMeans(predError)
 T12 <- dCorT[ , -3]; T12[ , 3] <- S1; T12[ , 4] <- S2
 write.csv(T12, file = paste0(CVDir, "TotalPredictionError.csv"))
+write.csv(T12 %>% as.data.frame() %>% plyr::arrange(CC.Pred..Error)
+          , file = paste0(CVDir, "ranked_TotalPredictionError.csv"))
 
 
 library(plotly)
@@ -229,7 +231,7 @@ contourPlot <- plot_ly(hmelt, x = ~l1, y = ~l2, z = ~value, type = "contour") %>
   layout(xaxis = a, yaxis = b, showlegend = TRUE, legend = f1)  
 # orca not works for me
  export(contourPlot, paste0(CVDir, "L1L2.png"))
-
+ print(T12 %>% as.data.frame()%>% plyr::arrange(CC.Pred..Error) %>% dplyr::top_n(-5))
 }
 
 # orca(contourPlot, file = paste0(CVDir, "TotalPredictionError.pdf"))
@@ -288,3 +290,11 @@ contourPlot <- plot_ly(hmelt, x = ~l1, y = ~l2, z = ~value, type = "contour") %>
 #             CCcoef = c(10,1,10), s1 = s1s2[i,1], s2= s1s2[i,2],
 #             pen1 = 0.6, pen2 = 0.3)
 # }
+
+### test code 
+# CVDir <- "LTA_Outlier_Global_100_50_Genus_1_4foldCV/"
+# t_pred_err <- read.csv(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/",
+#                 CVDir, "TotalPredictionError.csv"))
+# t_pred_err %>% as.data.frame() %>% plyr::arrange(CC.Pred..Error)
+# 
+# print(t_pred_err %>% as.data.frame() %>% dplyr::top_n(-10))
