@@ -31,7 +31,7 @@ rescaled_cli <- function(){
   # subset
   data = cli1 %>% dplyr::filter(cli1$pid %in% final_sam)
   # rescale to mean 0 and variance 1, from age to CD4Tcells % viable CD45+
-  df = cbind(data[, 1:4], apply(data[, 5:25], 2, scale) )
+  df = cbind(data[, 1:5], apply(data[, 6:25], 2, scale) )
   # make the clinical data has the same order of samples 
   # genelist contains Gene_ID, Symbol
   # clean and transform transcriptome data, subset of genes
