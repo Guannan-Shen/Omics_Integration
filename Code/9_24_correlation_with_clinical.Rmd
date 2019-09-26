@@ -1,0 +1,231 @@
+---
+title: "Correlation with Clinical Phenotypes"
+author: "Guannan Shen"
+date: "September 24, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+library(tidyverse)
+library(magrittr)
+library(SmCCNet)
+
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+
+```{r loaddata}
+dir = "~/Documents/gitlab/Omics_Integration/"
+# load all datasets 
+source( paste0(dir, "Code/8_5_testing_dataset.R") )
+# ref plots and correlation 
+source( paste0(dir, "Code/ref_plots.R") )
+# get module 0 and PCA
+source( paste0(dir, "Code/corr_pheno.R") )
+# Optimize edge cut 
+source( paste0(dir, "Code/edge_cut.R") )
+source( paste0(dir, "Code/put_together.R") )
+source( paste0(dir, "Code/enrichment.R") )
+```
+
+# t-test and linear regression vs HIV-status 
+
+```{r intraClins}
+data <- cbind(ID, HIV, sex, age, LPS, LTA, CD14) %>% as.data.frame()
+print("Simple t-test")
+sapply(colnames(data)[5:7], function(x){
+  print(x)
+  lm_hiv = lm(data[, x] ~ data$HIV)
+  sum_hiv = summary(lm_hiv)
+  print(sum_hiv$coefficients[,c(1,4)])
+})
+
+print("Adjusted for age and sex")
+sapply(colnames(data)[5:7], function(x){
+  print(x)
+  lm_hiv_short = lm(data[, x] ~ data$HIV)
+  lm_hiv = lm(data[, x] ~ data$HIV + data$sex + data$age)
+  sum_hiv = summary(lm_hiv)
+  print(sum_hiv$coefficients[,c(1,4)])
+   print(anova(lm_hiv_short, lm_hiv))
+})
+
+print("Age and sex are not important.")
+```
+
+
+# get correlation non-reduced vs reduced modules against the phenotype
+```{r loadmodules, fig.width= 8 , fig.height=6, eval=F}
+# All features excluded in identified modules are grouped as Module 0.
+edges_i <- c(0, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5)
+######### CD14 #####
+CVDir <- "CD14_Outlier3_Global_100_50_Genus_3_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+n_nodes <- try_edges(edges_i )
+elbow_edge(edges_i, n_nodes, "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+           "Soluble CD14; Global Transcriptome; Genus Level Mirobiome")
+
+######### LTA #####
+edges_i <- c(0, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
+CVDir <- "LTA_Outlier_Global_100_50_Genus_1_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+
+n_nodes <- try_edges(edges_i )
+elbow_edge(edges_i, n_nodes, "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+           "LTA; Global Transcriptome; Genus Level Mirobiome")
+
+########### LPS #############3
+CVDir <- "LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
+
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+
+n_nodes <- try_edges(edges_i )
+elbow_edge(edges_i, n_nodes, "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+           "LPS; Global Transcriptome; Genus Level Mirobiome")
+
+############## HIV ###########333
+CVDir <- "HIV_Outlier_11_Global_100_50_Genus_2_4foldCV/"
+edges_i <- c(0, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5)
+
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+
+n_nodes <- try_edges(edges_i )
+elbow_edge(edges_i, n_nodes, "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+           "HIV; Global Transcriptome; Genus Level Mirobiome")
+
+######### Two Omics ###########33
+CVDir <- "_Outlier1_Global_100_50_Genus_1_4foldCV/"  
+edges_i <- c(0, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5)
+
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+
+n_nodes <- try_edges(edges_i )
+elbow_edge(edges_i, n_nodes, "~/Documents/gitlab/Omics_Integration/Reports/plots/",
+           "Global Transcriptome; Genus Level Mirobiome")
+```
+
+
+```{r overall_pearson}
+# for soluable CD14 
+######### CD14 #####
+CVDir <- "CD14_Outlier3_Global_100_50_Genus_3_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+##### including the module 0 ############
+module_s_0 <- add_module_0(abar, modules)
+
+########## correlation against the pheotype ###########
+# the rescaled value for each module
+fea_list <- levels_mo_feature(X1 = filtered_rlog[, filtered_outlier], 
+                  X2 = mibi[, mibi_outlier], 
+                  module_s_0)
+### the stacked dataframe of pearson correlation against the CD14 ##########
+test_modules <- corr_list_module(fea_list, CD14, 0:5, modulelabel = "module")
+
+
+####### raw edgecut network ##########
+edge_cut <- 0.2
+edgecut_by(X1 = filtered_rlog[, filtered_outlier], 
+             X2 = mibi[, mibi_outlier], 
+           # edgeCut = edge_cut
+           edgeCut = 0.3
+           )
+### apply edge cut ########3
+############### get the similarity matrix and adjacency matrix ##############
+reduced_sim <- signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier], 
+                                        X2 = mibi[, mibi_outlier], abar,
+                                        modules, edgecut = edge_cut)
+
+fea_trimmed <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
+                      X2 = mibi[, mibi_outlier],
+                      reduced_sim)
+
+test_trimmed <- corr_list_module(fea_trimmed, CD14, 1:5, modulelabel = "trimmed module")
+
+modules_cor <- rbind(test_modules, test_trimmed)
+
+corr_modules(modules_cor, modules_cor$ind, modules_cor$values,  "", "Correlation")
+####for full modules
+# non_reduced_sim <-  signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier], 
+#                                         X2 = mibi[, mibi_outlier], abar,
+#                                         modules, edgecut = 0)
+# kegg_enrichr(genes) %>% write.csv(., row.names = F,
+#                    "~/Documents/gitlab/Omics_Integration/DataProcessed/kegg_scd14_402_module5.csv")
+
+```
+
+# PC1 of non-reduced modules against the phenotype
+This can provide us with p-value
+
+```{r PC1}
+
+```
+
+
+# Other phenotypes
+
+```{r others}
+
+```
