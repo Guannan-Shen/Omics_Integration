@@ -172,7 +172,8 @@ run_SmCCNet(X1 = filtered_rlog[, filtered_outlier],
             # n_na = n_na,
             # NoTrait itself is to control whether to use Y or not 
             NoTrait = FALSE,
-            EdgeCut = 0)
+            EdgeCut = 0,
+            bytrait = FALSE)
 
 
 ######3 edge Cut 0.1 
@@ -201,7 +202,8 @@ run_SmCCNet(X1 = filtered_rlog[, filtered_outlier],
             # n_na = n_na,
             # NoTrait itself is to control whether to use Y or not 
             NoTrait = TRUE,
-            EdgeCut = 0)
+            EdgeCut = 0,
+            bytrait = FALSE)
 
 ######3 edge Cut 0.1 
 load(paste0(dir, "SmCCNetWeights.RData"))
@@ -230,6 +232,90 @@ clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
 
 ```
 
+
+# LTA
+
+```{r lta}
+# get this feature
+LTA <- clin %>% dplyr::select(LTA)
+anyNA(LTA)
+
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "LTA_Outlier_Global_100_50_Genus_1_4foldCV/"
+show_top_l1l2(CVDir, 10)
+
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = LTA,
+            l1 = 0.05, 
+            l2 = 0.25, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            # n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = FALSE,
+            bytrait = FALSE,
+            EdgeCut = 0)
+```
+
+# LPS
+
+```{r lps}
+LPS <- clin %>% select(LPS)
+n_na <- which(is.na(LPS))
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = LPS,
+            l1 = 0.1, 
+            l2 = 0.15, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = FALSE,
+            EdgeCut = 0,
+            bytrait = FALSE)
+
+######3 edge Cut 0.1 
+dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
+load(paste0(dir, "SmCCNetWeights.RData"))
+edgecut_by(filtered_rlog[-n_na, filtered_outlier], mibi[-n_na, mibi_outlier], 0.1)
+
+```
+
+
+# HIV Status 
+
+```{r hiv_status}
+# disease status
+HIV <- ifelse(clin$Group == "hiv", 1, 0) %>% as.data.frame()
+colnames(HIV) <- "HIV"
+
+setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
+CVDir <- "HIV_Outlier_11_Global_100_50_Genus_2_4foldCV/"
+show_top_l1l2(CVDir, 10)
+
+run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
+            X2 = mibi[, mibi_outlier],
+            Y = HIV,
+            l1 = 0.5, 
+            l2 = 0.85, 
+            s1 = 0.7, 
+            s2 = 0.9, 
+            weights = NULL,
+            # n_na = n_na,
+            # NoTrait itself is to control whether to use Y or not 
+            NoTrait = FALSE,
+            bytrait = TRUE,
+            EdgeCut = 0)
+```
+
+
+
 ## CRP is not correlated with LPS/CD14
 
 ```{r crp}
@@ -257,51 +343,6 @@ run_SmCCNet(X1 = filtered_rlog[, filtered_outlier],
 dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/CRP_Outlier1_Global_100_50_Genus_1_4foldCV/"
 load(paste0(dir, "SmCCNetWeights.RData"))
 edgecut_by(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 0.1)
-```
-
-# LPS
-
-```{r lps}
-LPS <- clin %>% select(LPS)
-n_na <- which(is.na(LPS))
-setwd("~/Documents/gitlab/Omics_Integration/DataProcessed/")
-CVDir <- "LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
-run_SmCCNet(X1 = filtered_rlog[, filtered_outlier], 
-            X2 = mibi[, mibi_outlier],
-            Y = LPS,
-            l1 = 0.1, 
-            l2 = 0.1, 
-            s1 = 0.7, 
-            s2 = 0.9, 
-            weights = NULL,
-            n_na = n_na,
-            # NoTrait itself is to control whether to use Y or not 
-            NoTrait = FALSE,
-            EdgeCut = 0)
-
-######3 edge Cut 0.1 
-dir <- "~/Documents/gitlab/Omics_Integration/DataProcessed/LPS_Outlier1_Global_100_50_Genus_1_4foldCV/"
-load(paste0(dir, "SmCCNetWeights.RData"))
-edgecut_by(filtered_rlog[-n_na, filtered_outlier], mibi[-n_na, mibi_outlier], 0.1)
-
-```
-
-
-# HIV Status 
-
-```{r hiv_status}
-# disease status
-HIV <- ifelse(clin$Group == "hiv", 1, 0) %>% as.data.frame()
-colnames(HIV) <- "HIV"
-```
-
-# LTA
-
-```{r lta}
-# get this feature
-LTA <- clin %>% dplyr::select(LTA)
-anyNA(LTA)
-
 ```
 
 
