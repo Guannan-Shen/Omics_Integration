@@ -292,9 +292,18 @@ contourPlot <- plot_ly(hmelt, x = ~l1, y = ~l2, z = ~value, type = "contour") %>
 # }
 
 ### test code 
-# CVDir <- "LTA_Outlier_Global_100_50_Genus_1_4foldCV/"
+# CVDir <- "_Outlier1_Global_100_50_Genus_1_4foldCV/"
 # t_pred_err <- read.csv(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/",
 #                 CVDir, "TotalPredictionError.csv"))
 # t_pred_err %>% as.data.frame() %>% plyr::arrange(CC.Pred..Error)
 # 
-# print(t_pred_err %>% as.data.frame() %>% dplyr::top_n(-10))
+# print(t_pred_err %>% as.data.frame() %>% plyr::arrange(CC.Pred..Error) %>% dplyr::top_n(-5))
+
+show_top_l1l2 <- function(dir, topn){
+  print("dir such as: _Outlier1_Global_100_50_Genus_1_4foldCV/")
+  t_pred_err = read.csv(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                  dir, "TotalPredictionError.csv"))
+  print(t_pred_err %>% as.data.frame() %>% plyr::arrange(CC.Pred..Error) %>% dplyr::top_n(-topn))
+}
+
+
