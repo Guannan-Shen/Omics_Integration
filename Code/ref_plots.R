@@ -47,7 +47,7 @@ get_corr <- function(df1, df2, label){
   # pearson correlations
   df = stats::cor(df1, df2, method = "pearson") %>% as.data.frame() %>% stack() %>% 
     as.data.frame()  %>% dplyr::mutate(group = label) %>%
-    select(values, group)
+    dplyr::select(values, group)
   return(df)
 }
 
