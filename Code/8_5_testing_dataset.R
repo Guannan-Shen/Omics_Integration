@@ -43,7 +43,7 @@ colnames(HIV) <- "HIV"
 #
 LTA <- clin %>% dplyr::select(LTA)
 #
-LPS <- clin %>% select(LPS)
+LPS <- clin %>% dplyr::select(LPS)
 n_na <- which(is.na(LPS))
 
 
