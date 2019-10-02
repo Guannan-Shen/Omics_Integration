@@ -1,0 +1,202 @@
+---
+title: "sCD14 after running SmCCNet"
+author: "Guannan Shen"
+date: "September 30, 2019"
+output: 
+  html_document:
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_depth: 5
+    toc_float: no
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+opts_chunk$set(engine = "R")
+knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+## setting wd in DELL
+## opts_knit$set(root.dir = "~/Stats/CIDA_OMICs/CIDA_OMICS/7659Stats_Genetics/HW5/")
+## setting working directory in asus 
+## opts_knit$set(root.dir = "C:/Users/hithr/Documents/Stats/gitlab/Cario_RNASeq_Microbiom_Inte/DataRaw/") 
+## setting working directory in ubuntu
+opts_knit$set(root.dir = "~/Documents/gitlab/Omics_Integration/Code/")
+                                                 
+## cache = F, if cache = T, will not revaluate code chunk everytime
+## double or more space to insert a line break
+```
+
+
+```{r libs, echo = FALSE, warning= F}
+######################
+## Set up workspace
+######################
+rm(list = ls())
+library(openxlsx)
+
+library(magrittr)
+library(SmCCNet)
+library(tidyverse)
+options(stringsAsFactors = F)
+options(dplyr.width = Inf)
+getwd()
+
+# directory, Ubuntu 
+dir = "~/Documents/gitlab/Omics_Integration/"
+# small functions, %nin%, %||%, isnothing
+source( paste0(dir, "Code/small_fun.R") )
+
+# ######## clean memory ######################
+# rm(list = ls())
+# gc()
+# is(dds)
+# slotNames(dds)
+```
+
+```{r loaddata}
+dir = "~/Documents/gitlab/Omics_Integration/"
+# load all datasets 
+source( paste0(dir, "Code/8_5_testing_dataset.R") )
+# ref plots and correlation 
+source( paste0(dir, "Code/ref_plots.R") )
+# get module 0 and PCA
+source( paste0(dir, "Code/corr_pheno.R") )
+# Optimize edge cut 
+source( paste0(dir, "Code/edge_cut.R") )
+source( paste0(dir, "Code/put_together.R") )
+source( paste0(dir, "Code/enrichment.R") )
+
+source( paste0(dir, "Code/pca_getPC1.R") )
+```
+
+# sCD14 
+## load modules
+From here, we will have abar, modules, Ws. 
+
+```{r loadmodules, fig.width= 8 , fig.height=6}
+######### CD14 #####
+CVDir <- "CD14_Outlier3_Global_100_50_Genus_3_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+dim(abar)
+
+######## and useful datasets ##########
+p1 <-  ncol(filtered_rlog[, filtered_outlier])
+p2 <-  ncol(mibi[, mibi_outlier])
+n_networks <- length(modules)
+# feature names 
+rna_names <- colnames(filtered_rlog[, filtered_outlier])
+micro_names <- colnames( mibi[, mibi_outlier])
+
+## get simplified micro names
+sim_m_names <- sim_micro_names(micro_names)
+
+##### including the module 0 ############
+module_s_0 <- add_module_0(abar, modules)
+
+########## correlation against the pheotype ###########
+# the rescaled value for each module
+fea_list <- levels_mo_feature(X1 = filtered_rlog[, filtered_outlier], 
+                  X2 = mibi[, mibi_outlier], 
+                  module_s_0)
+
+```
+
+## All modules, no edge cuts 
+
+```{r allmod}
+## summary of top nodes per module
+n_networks <- length(modules)
+for ( i in 1:n_networks){
+    print("Total nodes:")
+    print(length(modules[[i]]))
+    top_hubs_bymean(abar, modules[[i]], n = 20) %>% kable %>% print()
+}
+
+
+```
+
+## edge cut 
+
+```{r edgecutdiff}
+############ Pearson correlation ##########
+### the stacked dataframe of pearson correlation against the CD14 ##########
+modules_Pearson <- corr_list_module(fea_list, CD14, 0:n_networks, modulelabel = "module")
+
+#######3 show results of different edgecut ##########
+edges <- c(0.1, 0.2, 0.3, 0.4)
+adj_cut <- vector("list", length(edges))
+features_cut <- vector("list", length(edges))
+trimmed_Pearson <- vector("list", length(edges))
+for (i in 1: length(edges)){
+  edge_cut <- edges[i]
+  ############### get the adjacency matrix ##############
+  tmp <- signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier], 
+                                        X2 = mibi[, mibi_outlier], abar,
+                                        modules, edgecut = edge_cut)
+  adj_cut[[i]] <- tmp
+  ############### get feature levels  ##############
+   tmp2 <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
+                      X2 = mibi[, mibi_outlier], tmp)
+  features_cut[[i]] <- tmp2
+  ######## pearson correlation against sCD14 ##########
+  trimmed_Pearson[[i]] <- corr_list_module(tmp2, CD14, 1:n_networks, 
+                                   modulelabel = paste(edge_cut, "trimmed module"))
+}
+
+###### combine all trimmed correlation 
+trimmed_Pearson_all <- do.call("rbind", trimmed_Pearson)
+dim(trimmed_Pearson_all)
+modules_cor <- rbind(modules_Pearson, trimmed_Pearson_all)
+
+corr_modules(modules_cor, modules_cor$ind, modules_cor$values,  "", "Correlation")
+
+######### PC1 association, cor.test with CD14 ##
+## original ones 
+pc1_modules <- do.call(  "cbind", get_pc1_listfeature(fea_list))
+## trimmed ones (PC1s)
+mat <- matrix(NA, nrow(fea_list[[1]]), length(edges))
+for (i in 1: length(edges)){
+  mat[ ,i] <- get_pc1_listfeature(features_cut[[i]]) %>% unlist
+}
+## combind all PC1s 
+pc1_cor <- cbind(pc1_modules, mat)
+dim(pc1_cor)
+colnames(pc1_cor) <- c(paste("Module", 0:n_networks), paste("Trimmed Module", edges) )
+
+cor_test_df(pc1_cor, CD14[,1]) %>% round(., 3)%>% kable 
+
+```
+
+
+## select modules for Enrichment analysis
+```{r enrich}
+## for module 5 
+########## for one module ######3
+index = modules[[5]] [modules[[5]] <= p1]
+genes = colnames(abar)[index]
+## go and kegg
+go_test = clusterPro_GO( genes, ontol = "CC", fdrcut = 0.2)
+gg_test = clusterPro_kegg(genes, fdrcut = 0.2)
+
+barplot(go_test, showCategory = length(go_test$qvalue) )
+barplot(gg_test, showCategory = length(gg_test$qvalue) )
+
+############# enrichment analysis of all ########
+######### enrichR #########
+summary_networks(abar, modules, p1)
+
+###### clusterProfiler ######
+
+```
