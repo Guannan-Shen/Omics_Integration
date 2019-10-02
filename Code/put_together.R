@@ -62,5 +62,29 @@ edgecut_by <- function(X1, X2, edgeCut){
                             EdgeCut = EdgeCut))
   }
 }
+
+sim_micro_names <- function(micro_names){
+  p2 = length(micro_names)
+  micro_names_sim = rep(NULL, p2)
+  for (i in 1:p2){
+    new_vector = unlist(strsplit(micro_names[i], fixed = T, split = "."))
+    if (length(new_vector) == 1 ) {
+      micro_names_sim[i] = micro_names[i]
+    } else if ( length(new_vector) == 2 ){  
+      micro_names_sim[i] <-  new_vector[-1] %>%
+        paste(., collapse = ".")
+    } else{
+      micro_names_sim[i] <-  new_vector[-c(1,2)] %>%
+        paste(., collapse = ".")}
+  }
+  return(micro_names_sim)
+}
+
+
+
+
+
+
+
 # load(paste0(dir, "SmCCNetWeights.RData"))
 # edgecut_by(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 0.1)
