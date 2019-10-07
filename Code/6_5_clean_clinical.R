@@ -28,7 +28,7 @@ rescaled_cli <- function(){
   final_sam = shared_sam
   
   # get clinical data
-  cli1 = read.xlsx("clinical_ready.xlsx")
+  cli1 = read.xlsx("~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/clinical_ready.xlsx")
   # subset
   data = cli1 %>% dplyr::filter(cli1$pid %in% final_sam)
   # rescale to mean 0 and variance 1, from age to CD4Tcells % viable CD45+
@@ -60,7 +60,7 @@ nonrescaled_cli <- function(){
   final_sam = shared_sam
   
   # get clinical data
-  cli1 = read.xlsx("clinical_ready.xlsx")
+  cli1 = read.xlsx("~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/clinical_ready.xlsx")
   # subset
   data = cli1 %>% dplyr::filter(cli1$pid %in% final_sam)
   # rescale to mean 0 and variance 1, from age to CD4Tcells % viable CD45+
