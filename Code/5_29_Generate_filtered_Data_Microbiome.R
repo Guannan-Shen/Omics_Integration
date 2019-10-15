@@ -16,7 +16,7 @@ rescale_microbiome <- function(data){
 }
 
 ############# using all 27 samples #########################
-load_filtered_micro_level_samples <- function(level, prevalence, RA, wd){
+load_filtered_micro_level_samples <- function(level, prevalence, RA, wd, collapse){
   #########
   # level  c("phylum", "order", "family", "genus", "species" )
   # prevalence and RA are positive integers
@@ -187,11 +187,15 @@ load_filtered_micro_level_samples <- function(level, prevalence, RA, wd){
   # microbiome relative abundance should sum to 1 not 100
   mibi.set$ra <- (mibi.set$cts/ mibi.set$Total)*100
   # long format to wide format, RA
+  # long format to wide 
   mibi_filter_ra <-  mibi.set  %>% 
     dplyr::select(Lib, Taxa, ra) %>%
     spread(., Taxa, ra) %>% as.data.frame() %>% column_to_rownames("Lib")
   Libs <- rownames(mibi_filter_ra)
   ######### filter genus ##########33
+  ### collapse unclassified to the other or not ##########
+  if(collapse){
+    
   if (level == "genus"){
     non_classified <- c("Cyano:4C0d-2", "Bacte:Bacte:S24-7", 
                         "Prote:Betaproteobacteria", "Tener:Molli:RF9"
@@ -236,8 +240,26 @@ load_filtered_micro_level_samples <- function(level, prevalence, RA, wd){
     mibi_filter_clr <- clr( mibi_filter_ra)   %>% as.data.frame()
     rownames(mibi_filter_clr) <- Libs
   }
+  } 
   
-  # long format to wide 
+  else{ ############ not collapse unclassified to other #############
+    if (level == "genus"){
+      taxa_all <- colnames(mibi_filter_ra)
+      rownames(mibi_filter_ra) <- Libs
+      ###### library(compositions)
+      mibi_filter_clr <- clr( mibi_filter_ra)   %>% as.data.frame()
+      rownames(mibi_filter_clr) <- Libs
+    }
+    else if (level == "family"){
+      taxa_all <- colnames(mibi_filter_ra)
+      rownames(mibi_filter_ra) <- Libs
+      ###### library(compositions)
+      mibi_filter_clr <- clr( mibi_filter_ra)   %>% as.data.frame()
+      rownames(mibi_filter_clr) <- Libs
+    
+    }
+  }
+  ## return RA and clr, RA of all Taxa and library size 
   return(list(filtered_RA = mibi_filter_ra, 
               filtered_clr = mibi_filter_clr, 
               full_RA = data_ra, 
@@ -529,7 +551,6 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
   mibi_filter_clr <-  mibi.set  %>% 
     dplyr::select(Lib, Taxa, clr) %>%
     spread(., Taxa, clr) %>% as.data.frame() %>% column_to_rownames("Lib")
-  return(list(mibi_filter_ra, mibi_filter_clr, data_ra, lib_s))
-}
+  return(list(mibi_filter_ra, mibi_filter_clr, data_ra, lib_s)) }
 
 
