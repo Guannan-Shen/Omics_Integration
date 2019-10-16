@@ -81,6 +81,7 @@ print(ncol(filtered_rlog))
 filtered_outlier <- grubbs_df(filtered_rlog, 2, 10)$fdr > 0.05
 print(sum(filtered_outlier))
 print( colnames (filtered_rlog) [!filtered_outlier])
+
 #############33##3 different mibi ##############
 prev <- 20
 ra <- 1
@@ -89,41 +90,97 @@ micro_level <- "genus"
 # omcis_name <- "30_2_Global_100_50_Genus"
 
 micro_data <- load_filtered_micro_level_samples(micro_level,  
-                                                prevalence = prev, RA = ra, wd = "Ubuntu")
+                                                prevalence = prev, RA = ra, wd = "Ubuntu",
+                                                collapse = FALSE)
 micro_clr <- micro_data[[2]] %>% as.data.frame()
+colnames(micro_clr)
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)
+# remove low abundance taxa
+mibi <- mibi %>% dplyr::select(-Other)
 mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
 print(ncol(mibi))
 print(sum(mibi_outlier))
 print( colnames (mibi) [!mibi_outlier])
-
-a <- colnames (mibi)
+# a <- colnames (mibi)
 ############# 20, 1 ############
 prev <- 20
-ra <- 0
-micro_level <- "genus"
+ra <- 1
+micro_level <- "family"
 # omcis_name <- "30_2_Global_100_50_Genus"
 
 micro_data <- load_filtered_micro_level_samples(micro_level,  
-                                                prevalence = prev, RA = ra, wd = "Ubuntu")
+                                                prevalence = prev, RA = ra, wd = "Ubuntu",
+                                                collapse = FALSE)
 micro_clr <- micro_data[[2]] %>% as.data.frame()
+# colnames(micro_clr)
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)
+mibi <- mibi %>% dplyr::select(-Other)
 mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
 print(ncol(mibi))
 print(sum(mibi_outlier))
 print( colnames (mibi) [!mibi_outlier])
-
-colnames (mibi) [colnames (mibi) %nin% a]
+# colnames (mibi) [colnames (mibi) %nin% a]
 ###### summary ############
 print(paste0("Transcriptome cutoffs mean: ", mean_cut, " variance: ", var_cut, 
              " Microbiome cutoffs prevalence: ", prev, " RA: ", ra, " ", micro_level ) )
-mibi[, "Other"]
 
-mibi <- 
-  
-  mibi %>% dplyr::select(-Other) %>% dim()
+######################## descriptive ################
+########## summary of n classified taxa ##########
+prev_list <- seq(10, 70, 10)
+ra_list <- c(0, 0.5, 1, 2, 3, 4, 5)
+data <- matrix(NA, nrow = length(prev_list)*length(ra_list), ncol = 3)
+
+for (i in 1:length(ra_list) ){
+  micro_level <- "genus"
+  ra = ra_list[i]
+  for (j in 1:length(prev_list) ){
+    prev = prev_list[j]
+    try(
+      micro_data <- load_filtered_micro_level_samples(micro_level,  
+                                                    prevalence = prev, RA = ra, wd = "Ubuntu",
+                                                    collapse = FALSE)
+      )
+    micro_clr <- micro_data[[2]] %>% as.data.frame()
+    mibi <- rescale_microbiome(micro_clr)
+    mibi <- mibi %>% dplyr::select(-Other)
+    mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
+    n_taxa <- sum(mibi_outlier)
+    ## assign value 
+    
+    data[(i-1)*length(ra_list) + j, ] <- c(paste0(ra, "%"), paste0(prev, "%"), n_taxa)
+  }
+}
+data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>% 
+                write.csv("~/Documents/gitlab/Omics_Integration/DataProcessed/genus_nocollapse.csv",
+                          row.names =  F)
+data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>%
+              tidyr::pivot_wider(., names_from = RA, values_from = N) %>% as.data.frame()  %>%
+write.csv("~/Documents/gitlab/Omics_Integration/DataProcessed/genus_nocollapse_spread.csv",
+                                                  row.names =  F)
+
+df <- data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>%
+  tidyr::pivot_wider(., names_from = RA, values_from = N) %>% as.data.frame()
+
+df
+# length(prev_list)*length(ra_list)
+prev <- 10
+taxa_level <- "genus"
+n_taxa <- as.vector(df[1, 2:8])
+coords = paste("(", ra_list, ", ", df[1, 2:8], ")", sep="")
+p = ggplot(mapping =  aes(x = ra_list, y = df[1, 2:8] )) + 
+  theme_bw() +
+  geom_line() +
+  labs(x = paste("Relative Abundance %","(", "While prevalence =",prev ,"%)", sep = " "),
+       y = paste0("n taxa at ", tools::toTitleCase(taxa_level), " level") ) + 
+  geom_label(aes(ra_list, df[1, 2:8], label=coords))
+print(p)
+# mibi[, "Other"]
+# 
+# mibi <- 
+#   
+#   mibi %>% dplyr::select(-Other) %>% dim()
 ################### outliers ################
 # df <- micro_data[[1]][, "Prote:Epsil:Helicobacter"] %>% as.data.frame() %>% 
 #                     dplyr::mutate(Taxa = " Proteobacteria:Epsilonproteobacteria:Helicobacter")  %>%
