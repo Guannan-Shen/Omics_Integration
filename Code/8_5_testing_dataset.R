@@ -83,8 +83,8 @@ print(sum(filtered_outlier))
 print( colnames (filtered_rlog) [!filtered_outlier])
 
 #############33##3 different mibi ##############
-prev <- 20
-ra <- 1
+prev <- 40
+ra <- 2
 ##### "genus" or "family"
 micro_level <- "genus"
 # omcis_name <- "30_2_Global_100_50_Genus"
@@ -93,7 +93,6 @@ micro_data <- load_filtered_micro_level_samples(micro_level,
                                                 prevalence = prev, RA = ra, wd = "Ubuntu",
                                                 collapse = FALSE)
 micro_clr <- micro_data[[2]] %>% as.data.frame()
-colnames(micro_clr)
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)
 # remove low abundance taxa
@@ -104,8 +103,9 @@ print(sum(mibi_outlier))
 print( colnames (mibi) [!mibi_outlier])
 # a <- colnames (mibi)
 ############# 20, 1 ############
-prev <- 20
-ra <- 1
+prev <- 60
+# ra <- 1.1
+ra <- 3
 micro_level <- "family"
 # omcis_name <- "30_2_Global_100_50_Genus"
 
@@ -127,55 +127,83 @@ print(paste0("Transcriptome cutoffs mean: ", mean_cut, " variance: ", var_cut,
              " Microbiome cutoffs prevalence: ", prev, " RA: ", ra, " ", micro_level ) )
 
 ######################## descriptive ################
-########## summary of n classified taxa ##########
-prev_list <- seq(10, 70, 10)
-ra_list <- c(0, 0.5, 1, 2, 3, 4, 5)
-data <- matrix(NA, nrow = length(prev_list)*length(ra_list), ncol = 3)
-
-for (i in 1:length(ra_list) ){
-  micro_level <- "genus"
-  ra = ra_list[i]
-  for (j in 1:length(prev_list) ){
-    prev = prev_list[j]
-    try(
-      micro_data <- load_filtered_micro_level_samples(micro_level,  
-                                                    prevalence = prev, RA = ra, wd = "Ubuntu",
-                                                    collapse = FALSE)
-      )
-    micro_clr <- micro_data[[2]] %>% as.data.frame()
-    mibi <- rescale_microbiome(micro_clr)
-    mibi <- mibi %>% dplyr::select(-Other)
-    mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
-    n_taxa <- sum(mibi_outlier)
-    ## assign value 
-    
-    data[(i-1)*length(ra_list) + j, ] <- c(paste0(ra, "%"), paste0(prev, "%"), n_taxa)
-  }
-}
-data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>% 
-                write.csv("~/Documents/gitlab/Omics_Integration/DataProcessed/genus_nocollapse.csv",
-                          row.names =  F)
-data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>%
-              tidyr::pivot_wider(., names_from = RA, values_from = N) %>% as.data.frame()  %>%
-write.csv("~/Documents/gitlab/Omics_Integration/DataProcessed/genus_nocollapse_spread.csv",
-                                                  row.names =  F)
-
-df <- data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>%
-  tidyr::pivot_wider(., names_from = RA, values_from = N) %>% as.data.frame()
-
-df
+# ########## summary of n classified taxa ##########
+# prev_list <- seq(10, 70, 10)
+# ra_list <- c(0, 0.5, 1, 2, 3, 4, 5)
+# data <- matrix(NA, nrow = length(prev_list)*length(ra_list), ncol = 3)
+# 
+# for (i in 1:length(ra_list) ){
+#   micro_level <- "family"
+#   ra = ra_list[i]
+#   for (j in 1:length(prev_list) ){
+#     prev = prev_list[j]
+#     try(
+#       micro_data <- load_filtered_micro_level_samples(micro_level,  
+#                                                     prevalence = prev, RA = ra, wd = "Ubuntu",
+#                                                     collapse = FALSE)
+#       )
+#     micro_clr <- micro_data[[2]] %>% as.data.frame()
+#     mibi <- rescale_microbiome(micro_clr)
+#     mibi <- mibi %>% dplyr::select(-Other)
+#     mibi_outlier <- grubbs_df(mibi, 2, 10)$fdr > 0.05
+#     n_taxa <- sum(mibi_outlier)
+#     ## assign value 
+#     
+#     data[(i-1)*length(ra_list) + j, ] <- c(paste0(ra, "%"), paste0(prev, "%"), n_taxa)
+#   }
+# }
+# data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>% 
+#                 write.csv("~/Documents/gitlab/Omics_Integration/DataProcessed/genus_nocollapse.csv",
+#                           row.names =  F)
+# data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>%
+#               tidyr::pivot_wider(., names_from = RA, values_from = N) %>% as.data.frame()  %>%
+# write.csv("~/Documents/gitlab/Omics_Integration/DataProcessed/genus_nocollapse_spread.csv",
+#                                                   row.names =  F)
+# 
+# df <- data %>% set_colnames(c("RA", "Prevalence", "N")) %>% as.data.frame() %>%
+#   tidyr::pivot_wider(., names_from = RA, values_from = N) %>% as.data.frame()
+# 
+# ##########
+# 
+# df[6:7,4]  <- c(29, 25)
+# df
+# micro_cutoffs_prev(10, "family", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[1, 2:8]))
+# micro_cutoffs_prev(20, "family", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[2, 2:8]))
+# micro_cutoffs_prev(40, "family", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[4, 2:8]))
+# micro_cutoffs_prev(60, "family", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[6, 2:8]))
+# 
+# 
+# micro_cutoffs_prev(10, "genus", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[1, 2:8]))
+# micro_cutoffs_prev(20, "genus", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[2, 2:8]))
+# micro_cutoffs_prev(40, "genus", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[4, 2:8]))
+# micro_cutoffs_prev(60, "genus", c(0, 0.5, 1, 2, 3, 4, 5), as.numeric(df[6, 2:8]))
+# ############### figures ##########
 # length(prev_list)*length(ra_list)
-prev <- 10
-taxa_level <- "genus"
-n_taxa <- as.vector(df[1, 2:8])
-coords = paste("(", ra_list, ", ", df[1, 2:8], ")", sep="")
-p = ggplot(mapping =  aes(x = ra_list, y = df[1, 2:8] )) + 
-  theme_bw() +
-  geom_line() +
-  labs(x = paste("Relative Abundance %","(", "While prevalence =",prev ,"%)", sep = " "),
-       y = paste0("n taxa at ", tools::toTitleCase(taxa_level), " level") ) + 
-  geom_label(aes(ra_list, df[1, 2:8], label=coords))
-print(p)
+# df
+# prev <- 60
+# taxa_level <- "genus"
+# n_taxa <- as.numeric(df[6, 2:8])
+# 
+# micro_cutoffs_prev <- function(prev, taxa_level, n_taxa){
+#   coords = paste(ra_list, "% ", n_taxa, sep="")
+#   
+#   p = ggplot(data = df, mapping =  aes(x = ra_list, y = n_taxa )) + 
+#     theme_bw() +
+#     geom_line() +
+#     labs(x = paste("Relative Abundance Cutoff %","(", "While prevalence =",prev ,"%)", sep = " "),
+#          y = paste0("N Taxa (", tools::toTitleCase(taxa_level), ")") ) + 
+#     geom_label(aes(ra_list, n_taxa, label=coords), size = 4.5, label.size = 0.2)  +
+#     theme(axis.text.x = element_text(size = 14),
+#           axis.text.y = element_text(size = 14),
+#           axis.title.x = element_text(size = 15),
+#           axis.title.y = element_text(size = 15))
+#   print(p)
+#   title = paste0(prev, "_prev_Ntaxa_", taxa_level)
+#   ggsave(filename =  paste0( title, ".tiff"), device = NULL,
+#          path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
+#          dpi = 300, compression = "lzw")
+#   
+# }
 # mibi[, "Other"]
 # 
 # mibi <- 
