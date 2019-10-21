@@ -217,17 +217,20 @@ edgecut_by(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 0.1)
 ```{r exploreClin, fig.width= 10, fig.height=8}
 # clin[, c(6:18, 25)]
 # standardized to mean 0 var 1
-df <- clin[, c(6:18, 25)]
+non_clin <- nonrescaled_cli()
+df <- non_clin[, c(6:18, 25)]
+res <- residual_df(df, adjustfor = HIV[,1])
 clinical_names <- c("Blood CD4 T Cell Counts (cells/ul)", "Plasma Viral Load", 
                     "Tissue HIV RNA (per CD4 T cell)",
                     "Tissue CD4 T Cell Counts (number/g)", "IL-6 (pg/ml)", "CRP (ug/ml)", "iFABP (pg/ml)",
-                    "sCD27 (U/ml)", "CD14 (ng/ml)", "LPS (pg/ml)", "LTA (OD)", 
+                    "sCD27 (U/ml)", "sCD14 (ng/ml)", "LPS (pg/ml)", "LTA (OD)", 
                     base::paste("IFN", '\u03b1', sep = "" ),  base::paste("IFN", '\u03b2', sep = "" ),
                     "CD4 T cells (% viable CD45+ cells)")
+colnames(res) <- clinical_names
 colnames(df) <- clinical_names
 density_values_ind(df %>% stack(), "Density plot of clinical phenotypes")
-
 clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
+clin_pearson <- cor_heatmap(res, "pearson", TRUE, "complete", text_size = 3)
 # clin_pearson <- cor_heatmap(df, "spearman", TRUE, "complete", text_size = 3)
 
 ```
