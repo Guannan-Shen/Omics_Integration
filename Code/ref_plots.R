@@ -9,10 +9,32 @@ library(readxl)
 library(tidyverse)
 library(magrittr)
 library(tools)
+library(wesanderson)
+library(extrafont)
 # Correlations with significance levels
 # library(Hmisc)
 setwd("~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
 getwd()
+
+
+########### HOW TO SAVE #############
+save_lzw <- function(title){
+  ggsave(filename =  paste0( title, ".tiff"), device = NULL,
+         path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
+         dpi = 300, compression = "lzw")
+  
+}
+
+############# large axis font ##########
+  #  theme_bw() +
+  # theme(legend.position="bottom", legend.box = "horizontal" ) +
+# theme(axis.text.x = element_text(size = 16),
+#       axis.text.y = element_text(size = 16),
+#       axis.title.x = element_text(size = 18),
+#       axis.title.y = element_text(size = 18),
+#       legend.text = element_text(size=16),
+#       legend.title = element_text(size=16),
+#       text=element_text(family="Arial")) 
 
 ## histogram
 # the histogram is the distribution of within-subject variance 
@@ -45,11 +67,24 @@ get_corr <- function(df1, df2, label){
   print("No missing values")
   print("Group is the group label")
   # pearson correlations
-  df = stats::cor(df1, df2, method = "pearson") %>% as.data.frame() %>% stack() %>% 
+  df = stats::cor(df1, df2, use = "pairwise.complete.obs", 
+                  method = "pearson") %>% as.data.frame() %>% stack() %>% 
     as.data.frame()  %>% dplyr::mutate(group = label) %>%
     dplyr::select(values, group)
   return(df)
 }
+
+get_corr_1 <- function(df1, label){
+  print("No missing values")
+  print("Group is the group label")
+  # pearson correlations
+  df = stats::cor(df1, use = "pairwise.complete.obs", 
+                  method = "pearson") %>% as.data.frame() %>% stack() %>% 
+    as.data.frame()  %>% dplyr::mutate(group = label) %>%
+    dplyr::select(values, group)
+  return(df)
+}
+# get_corr_1(filtered_rlog[, filtered_outlier], "Within-Transcriptome")
 
 
 # boxplots
@@ -135,6 +170,93 @@ dot_groupby <- function(data, y, groupby, dotsize, xlab, ylab){
 # dot_groupby(clin, clin$CD14, clin$Group, 0.8, "HIV Status", "CD14")
 # dot_groupby(clin, clin$CD14, 1, 0.8, "The whole cohort", "CD14")
 
+########### grouped dot plot #############
+dot_group_violin <- function(data, groupby, y, xlab, ylab){
+  print("Using data$group, data$y for groupby and y arguments")
+  p = ggplot(data, aes(x=groupby, y=y)) + 
+    # dot plot
+    # geom_dotplot(binaxis='y', stackdir='center', dotsize = dotsize)+
+    geom_violin(trim=FALSE) +
+    geom_boxplot(width=0.09) +
+    scale_colour_grey(start = 0.2, end = 0.8) +
+    # scale_y_continuous(name = waiver(), limits = c(-1.02, 1.02), breaks = c(-1, -0.5, 0, 0.5, 1), 
+    #                    labels = c(-1, -0.5, 0, 0.5, 1)) +
+    theme_bw() +
+    # mean and 2 std
+    # stat_summary(fun.data="mean_sdl", fun.args = list(mult=2), 
+    #              geom="crossbar", width=0.3) +
+    labs(x = xlab, y = ylab) +
+    coord_flip() +
+    theme(axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          axis.title.x = element_text(size = 17),
+          axis.title.y = element_text(size = 17))
+  print(p)
+}
+
+############ Compare Pearson'r of 3 datasets ###############
+compare_corr <- function(mibi, filtered_rlog, Y, level, Y_name){
+  micro_name = paste0("Microbiome","(",level, ")")
+  # between correlation
+  df1 = get_corr(mibi, filtered_rlog, paste0(micro_name,":Transcriptome"))
+  df2 = get_corr(Y, mibi, paste0(micro_name,":", Y_name) )
+  df3 = get_corr(Y, filtered_rlog, paste0("Transcriptome:", Y_name))
+  ## within correlation
+    df4 = get_corr_1(mibi, paste0("Within-",micro_name) )
+    df5 = get_corr_1(filtered_rlog, "Within-Transcriptome")
+    tmp = rbind(df1, df2, df3, df4, df5) %>% as.data.frame()
+  ## remove self-correlation
+    data = tmp %>% dplyr::filter(values != 1)
+    dot_group_violin(data, data$group, data$values, "", "Pearson's r")
+}
+
+######## dot plot , boxplot ########
+dot_group_box <- function(data, groupby, y, xlab, ylab){
+  print("Using data$group, data$y for groupby and y arguments")
+  p = ggplot(data, aes(x=groupby, y=y)) + 
+    # dot plot
+    # geom_dotplot(binaxis='y', stackdir='center', dotsize = dotsize)+
+    # geom_violin(trim=FALSE) +
+    geom_boxplot(width=0.3) +
+    scale_colour_grey(start = 0.2, end = 0.8) +
+    # scale_y_continuous(name = waiver(), limits = c(-1.02, 1.02), breaks = c(-1, -0.5, 0, 0.5, 1), 
+    #                    labels = c(-1, -0.5, 0, 0.5, 1)) +
+    theme_bw() +
+    # mean and 2 std
+    # stat_summary(fun.data="mean_sdl", fun.args = list(mult=2), 
+    #              geom="crossbar", width=0.3) +
+    labs(x = xlab, y = ylab) +
+    coord_flip() +
+    theme(axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          axis.title.x = element_text(size = 17),
+          axis.title.y = element_text(size = 17))
+  print(p)
+}
+
+############# cutoff figures from a df row ###############
+micro_cutoffs_prev <- function(prev, taxa_level, ra_list, n_taxa){
+  coords = paste(ra_list, "% ", n_taxa, sep="")
+  
+  p = ggplot(data = df, mapping =  aes(x = ra_list, y = n_taxa )) + 
+    theme_bw() +
+    geom_line() +
+    labs(x = paste0("Relative Abundance Cutoff % ","(", "While prevalence = ",prev ,"%)"),
+         y = paste0("N Taxa (", tools::toTitleCase(taxa_level), ")") ) + 
+    geom_label(aes(ra_list, n_taxa, label=coords), size = 4.5, label.size = 0.2) +
+    scale_x_continuous(limits = c(-0.3, 5.3), breaks = ra_list) +
+    theme(axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          axis.title.x = element_text(size = 18),
+          axis.title.y = element_text(size = 18)) +
+    theme(text=element_text(family="Arial"))
+  print(p)
+  title = paste0(prev, "_prev_Ntaxa_", taxa_level)
+  ggsave(filename =  paste0( title, ".tiff"), device = NULL,
+         path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
+         dpi = 300, compression = "lzw")
+  
+}
 
 ## elbow plot of filtering microbiome 
 elbow_prev <- function(taxa_level, prev_vector, RA){
@@ -152,7 +274,7 @@ elbow_prev <- function(taxa_level, prev_vector, RA){
     theme_bw() +
     geom_line() +
     labs(x = paste("Prevalence %","(", "While relative abundance =",RA ,"%)", sep = " "),
-         y = paste0("n taxa at ", toTitleCase(taxa_level), " level") ) + 
+         y = paste0("n taxa at ", tools::toTitleCase(taxa_level), " level") ) + 
     geom_label(aes(prev_vector, y_ntaxa, label=coords))
   print(p)
   ggsave(filename = paste0("~/Documents/gitlab/Omics_Integration/Reports/plots/","Prev", 
@@ -176,20 +298,27 @@ elbow_RA <- function(taxa_level, prev, RA_vector){
     theme_bw() +
     geom_line() +
     labs(x = paste("Relative Abundance %","(", "While prevalence =",prev ,"%)", sep = " "),
-         y = paste0("n taxa at ", toTitleCase(taxa_level), " level") ) + 
+         y = paste0("n taxa at ", tools::toTitleCase(taxa_level), " level") ) + 
     geom_label(aes(RA_vector, y_ntaxa, label=coords))
   print(p)
   ggsave(filename =  paste0( taxa_level, prev, "RA.tiff"), device = NULL, 
          path = "~/Documents/gitlab/Omics_Integration/Reports/plots/",
          dpi = 300, compression = "lzw")
 }
+############### need rerun ############3
 # elbow_RA('genus', 0, c(0, 0.5, 1, 2, 3, 4, 5))
-# 
+# #
 # elbow_prev("genus", seq(0, 70, 10), 0)
+# 
+# # 
+# elbow_RA('family', 0, c(0, 0.5, 1, 2, 3, 4, 5))
+# #
+# elbow_prev("family", seq(0, 70, 10), 0)
 # elbow_prev("genus", seq(0, 60, 10), 1)
 # elbow_prev("genus", seq(0, 70, 10), 2)
 # elbow_RA('genus', 30, c(0, 0.5, 1, 2, 3, 4, 5))
 # elbow_RA('genus', 40, c(0, 0.5, 1, 2, 3, 4, 5))
+
 
 contour_prev_RA <- function(taxa_level, prev_vector, RA_vector){
   
@@ -230,7 +359,8 @@ cor_heatmap <- function(df, method, reorder, hclust_method, text_size){
                          name= method) +
     theme_minimal()+ # minimal theme
     theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-                                     size = 12, hjust = 1))+
+                                     size = 16, hjust = 1),
+          axis.text.y = element_text(size = 16))+
     coord_fixed() +
     labs(x = "", y = "") + 
     geom_text(aes(Var2, Var1, label = round(value,2) ), color = "black", size = text_size)  +
@@ -243,12 +373,16 @@ cor_heatmap <- function(df, method, reorder, hclust_method, text_size){
       legend.position = c(0.5, 0.8),
       legend.direction = "horizontal")+
     guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
-                                 title.position = "top", title.hjust = 0.5))
+                                 title.position = "top", title.hjust = 0.5)) +
+    theme(axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16))
   # Print the heatmap
   print(ggheatmap)
   return(cormat)
 }
 
+# clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
+# clin_pearson <- cor_heatmap(res, "pearson", TRUE, "complete", text_size = 3)
 
 density_values_ind <- function(data, title){
   print("A column called group and a column called values")
@@ -264,4 +398,66 @@ density_values_ind <- function(data, title){
     theme(legend.position="bottom", legend.box = "horizontal") +
     labs(caption = title) 
   print(p)
+}
+
+
+###########33 function have better contour plot  ##################
+optimize_contour <- function(CVDir, l1_max, l2_max){
+  ###### default folder ##########
+  top = "~/Documents/gitlab/Omics_Integration/DataProcessed/"
+  df = read.csv(paste0(top, CVDir, "ranked_TotalPredictionError.csv"))
+  ####### subset ######
+  data = df %>% dplyr::select(-X)  %>% dplyr::filter( (l1 <= l1_max) & (l2 <= l2_max)  )
+  hmelt = melt(data[ , -3], id.vars = c("l1", "l2")) %>% set_colnames(c("l1", "l2", "Variable",
+                                                                        "Error") )
+  #####33 format ##########3
+  f1 = list(
+    family = "Arial, sans-serif",
+    size = 31,
+    color = "black"
+  )
+  f2 = list(
+    family = "Arial, sans-serif",
+    size = 31,
+    color = "black"
+  )
+  
+  f3 = list(
+    family = "Arial, sans-serif",
+    size = 27,
+    color = "black"
+  )
+  f4 = list(
+    family = "Arial, sans-serif",
+    size = 27,
+    color = "black"
+  )
+  
+  a = list(
+    title = paste("L1", "(s1 = 0.7",  "s2 = 0.9", ")",sep = " "),
+    titlefont = f1,
+    showticklabels = TRUE,
+    tickfont = f2
+  )
+  b = list(
+    title = "L2",
+    titlefont = f1,
+    showticklabels = TRUE,
+    tickfont = f2
+  )
+  
+  c = list(
+    title = "Prediction\nError",
+    titlefont = f3,
+    showticklabels = TRUE,
+    tickfont = f4
+  )
+  ######### contour plot by plot_ly ############3
+  contourPlot = plot_ly(hmelt, x = ~l1, y = ~l2, z = ~ Error, type = "contour",
+                        colorbar = c ) %>%
+    layout(xaxis = a, yaxis = b, showlegend = TRUE)  
+  
+  # orca not works for me
+  export(contourPlot, paste0( CVDir, "refined_L1L2.png"))
+  
 }
