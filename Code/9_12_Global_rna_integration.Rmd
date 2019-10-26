@@ -229,8 +229,8 @@ clinical_names <- c("Blood CD4 T Cell Counts (cells/ul)", "Plasma Viral Load",
 colnames(res) <- clinical_names
 colnames(df) <- clinical_names
 density_values_ind(df %>% stack(), "Density plot of clinical phenotypes")
-clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
-clin_pearson <- cor_heatmap(res, "pearson", TRUE, "complete", text_size = 3)
+clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3, "phenotypes")
+clin_pearson <- cor_heatmap(res, "pearson", TRUE, "complete", text_size = 3, "partial phenotypes")
 # clin_pearson <- cor_heatmap(df, "spearman", TRUE, "complete", text_size = 3)
 
 ```
