@@ -83,8 +83,8 @@ print(sum(filtered_outlier))
 print( colnames (filtered_rlog) [!filtered_outlier])
 
 #############33##3 different mibi ##############
-prev <- 40
-ra <- 2
+prev <- 20
+ra <- 1
 ##### "genus" or "family"
 micro_level <- "genus"
 # omcis_name <- "30_2_Global_100_50_Genus"
@@ -103,9 +103,9 @@ print(sum(mibi_outlier))
 print( colnames (mibi) [!mibi_outlier])
 # a <- colnames (mibi)
 ############# 20, 1 ############
-prev <- 60
+prev <- 20
 # ra <- 1.1
-ra <- 3
+ra <- 1
 micro_level <- "family"
 # omcis_name <- "30_2_Global_100_50_Genus"
 
@@ -125,6 +125,10 @@ print( colnames (mibi) [!mibi_outlier])
 ###### summary ############
 print(paste0("Transcriptome cutoffs mean: ", mean_cut, " variance: ", var_cut, 
              " Microbiome cutoffs prevalence: ", prev, " RA: ", ra, " ", micro_level ) )
+
+
+#################### summary of prevalence and RA, per Taxon ################
+
 
 ######################## descriptive ################
 # ########## summary of n classified taxa ##########
