@@ -11,6 +11,7 @@ library(knitr)
 library(igraph) 
 library(RCy3)
 library(WGCNA)
+library(diffEnrich)
 
 options(stringsAsFactors = F)
 options(dplyr.width = Inf)
@@ -29,106 +30,769 @@ source( paste0(dir, "Code/enrichment.R") )
 
 source( paste0(dir, "Code/pca_getPC1.R") )
 
-# load all datasets 
-source( paste0(dir, "Code/8_5_testing_dataset.R") )
+# load all datasets, the mibi datasets may vary
+# source( paste0(dir, "Code/8_5_testing_dataset.R") )
 
 # more mibi datasets getLs_diff_microbiome.R
 
 ############################ edge cut #######################
 ################# load abar, modules, Ws, the product of SmCCNet ###############
-# filtered_rlog[, filtered_outlier],  mibi[, mibi_outlier], abar, modules
+###### sCD14 genus 20 1 #############
 
 CVDir <- "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/"
 dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
 load(paste0(dir, "SmCCNetWeights.RData"))
 
-run <- 'Genus_20_1_sCD14'
-print(run)
-########### always need X1 X2 ############3
-p1 <-  ncol(filtered_rlog[, filtered_outlier])
-p2 <-  ncol(mibi[, mibi_outlier])
-n_networks <- length(modules)
-# feature names 
-rna_names <- colnames(filtered_rlog[, filtered_outlier])
-micro_names <- colnames( mibi[, mibi_outlier])
-
-mibi[, mibi_outlier] %>% ncol() %>% print()
-
-# check datasets
-ifelse(dim(abar)[1] == (p1 + p2), "We are good to go!", "Wrong Mibi Data!")
-
 ###### edge cut and through this, find the best (strongest) sub-networks ########3
-edges_i <- c(0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
-###
-print("Need X1, X2, abar, modules")
-n_nodes <- try_edges(edges_i, filtered_rlog[, filtered_outlier],  mibi[, mibi_outlier], modules)
-elbow_edge(edges_i, n_nodes, dir,
-           "Soluble CD14; Global Transcriptome; Genus Level Mirobiome (20 1)",
-           "Nodes")
-## num of edges 
-n_edges <- get_n_edges(edges_i, filtered_rlog[, filtered_outlier],  mibi[, mibi_outlier], modules)
-elbow_edge(edges_i, n_edges, dir,
-           "Soluble CD14; Global Transcriptome; Genus Level Mirobiome (20 1)",
-           "Edges")
+edges_i <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5)
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+micro_name <- "(Genus 20 1)"
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = CD14, 
+                  run = "Genus_20_1_sCD14" ,
+                  edges_i, dir, micro_name )
 
-########### pick an edge cutoff ############
+########### always need X1 X2 ############3
+########### pick an edge cutoff, and decide the robust module ############
 edge_cut <- 0.1 ######### 0.4 is for cytoscape 
-trimmed_list <-  signed_sim_matrix_cut (filtered_rlog[, filtered_outlier], 
-                                        mibi[, mibi_outlier], abar, modules, edge_cut)
-n_strong_modules <-   non_empty_n (trimmed_list )
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = CD14, 
+                  run = "Genus_20_1_sCD14" ,
+              edge_cut = 0.1, dir )
+## get the correlation against the phenotype and PC1 against the phenotype ########
+n_strong_modules <- 5
+edges <- c(0.1, 0.2, 0.3, 0.4)
+corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], Y = CD14, 
+              run = "Genus_20_1_sCD14" ,
+              n_strong_modules , dir, edges)
+####### from here focus on non-zero modules #########
+##### enrichment analysis #############
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = CD14, 
+                           run = "Genus_20_1_sCD14" ,
+                           n_strong_modules , dir)
 
-paste("Non zero modules after trimming:", n_strong_modules)
-# keep non-zero list element  :         keep(trimmed_list, negate(is_empty))
-
-#######33 from here focus on non-zero modules #########
-###### enrichment analysis for this strong modules 
-index = modules[[n_strong_modules]] [modules[[n_strong_modules]] <= p1]
-genes = colnames(abar)[index]
-## go and kegg
-#### cluster profiler
-go_test = clusterPro_GO( genes, ontol = "CC", fdrcut = 0.2)
-gg_test = clusterPro_kegg(genes, fdrcut = 0.2)
-
-barplot(go_test, showCategory = length(go_test$qvalue) )
-ggsave(filename = paste0(run,"CC.tiff"),device = NULL,
-       path = dir , dpi = 300, compression = "lzw" )
-barplot(gg_test, showCategory = length(gg_test$qvalue) )
-ggsave(filename = paste0(run,"kegg.tiff"),device = NULL,
-       path = dir , dpi = 300, compression = "lzw" )
-###### enrichr
-enrich_r <- summary_networks(abar, modules, p1, n_strong_modules)
-##3 only save the nonZero ones 
-write.xlsx(enrich_r[[n_strong_modules]], 
-           file = paste0(dir, run, "enrichr_kegg_CC.xlsx"))
-
-############ get nodes, edges matrix for cytoscape  ##########
-edge_cut <- 0.4 ######### 0.4 is for cytoscape 
-trimmed_list <-  signed_sim_matrix_cut (filtered_rlog[, filtered_outlier], 
-                                        mibi[, mibi_outlier], abar, modules, edge_cut)
-
-node_edge <- wrappper_adj_cyto(trimmed_list[[ n_strong_modules ]])
-
-######### run datasets, modules loading and cutting in 9_30_2019 #########
+######### From here, it is time to generate the network plot #########
 cytoscapePing ()
 cytoscapeVersionInfo ()
 
-df_cyto <- tidy_wgcna_cyto(node_edge, 
-                           x1_name = rna_names, x2_name = micro_names)
-df_cyto$edges %>% nrow()
-# # https://bioconductor.org/packages/release/bioc/vignettes/RCy3/inst/doc/Overview-of-RCy3.html
-#
-createNetworkFromDataFrames(df_cyto$nodes, df_cyto$edges, 
-                            title= "New Soluble CD14 cut 0.4", collection="sCD14")
+############ get nodes, edges matrix for cytoscape  ##########
+###### 0.4 has been done before ##########33
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.1, title = "New Soluble CD14 cut 0.1", collection="sCD14")
 
-write.xlsx(df_cyto$nodes, file = paste0(dir, edge_cut, "nodes.xlsx"))
-write.xlsx(df_cyto$edges, file = paste0(dir, edge_cut, "edges.xlsx"))
-####### summary of nodes and edges ##########
-n = 20
-top_hubs_bymean(abar, modules[[n_strong_modules]], n = n) %>%  
-                dplyr::mutate(Nodes = sim_micro_names(Nodes)) %>% 
-                     write.xlsx(., file = paste0(dir, n, "top_nodes_strongmodules.xlsx"))
 
-############# correlation against the clinical phenotypes ##############
+###### two Omics genus 20 1 #############
+
+CVDir <- "_Unclassified_Genus_Global_100_50_20_1_4_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Genus_20_1_Two_omics"
+micro_name <- "(Genus 20 1)"
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = NULL, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+edge_cut <- 0.1 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], Y = NULL, 
+              run = run ,
+              edge_cut =edge_cut , dir )
+#### get module 4 #####
+n_strong_modules <- 4
+## 3
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = NULL, 
+                           run = run,
+                           n_strong_modules , dir)
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.1, title = "New Two Omics cut 0.1", collection="sCD14")
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.3, title = "New Two Omics cut 0.3", collection="sCD14")
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "_Unclassified_Genus_Global_100_50_20_1_4_4foldCV/")
+name1 <- "0.1nodes.xlsx"
+name2 <- "0.1nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "Omics Only"
+diff <- "compare_sCD14_Omics"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+list1 <- read.xlsx( paste0(dir1, "Genus_20_1_sCD14Module5genelists.xlsx") )
+list1_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list1$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list1_pe$enrich_table , 
+           file = paste0(dir1, "diffEnrich_kegg.xlsx"))
+
+########### list 2, enrichment by diffEnrich #########
+list2 <- read.xlsx( paste0(dir2, "Genus_20_1_Two_omicsModule4genelists.xlsx") )
+
+print("Num of genes in total: ")
+nrow(list2)
+
+list2_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list2$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list2_pe$enrich_table , 
+           file = paste0(dir2, "diffEnrich_kegg.xlsx"))
+### 
+print("Num of pathways in total: ")
+nrow(list2_pe$enrich_table)
+## finally ##
+diff_enrich <- diffEnrich(list1_pe = list1_pe, list2_pe = list2_pe,
+                          method = "none", cutoff = 0.05)
+
+write.xlsx(diff_enrich$de_table , 
+           file = paste0(dir2, diff, "diffEnrich.xlsx"))
+
+plotFoldEnrichment(de_res = diff_enrich,pval = 0.05, N = 3 )
+ggsave(filename = paste0(diff, ".tiff"),device = NULL,
+       path = dir2 , dpi = 300, compression = "lzw", 
+       width = 7, height = 5, units = "in" )
+
+##################### HIV  20% 1% genus ###############
+
+CVDir <- "HIV_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Genus_20_1_HIV"
+micro_name <- "(Genus 20 1)"
+Y <- HIV
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = Y, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+
+edge_cut <- 0.1 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], Y = Y, 
+              run = run ,
+              edge_cut =edge_cut , dir )
+#### get module 1, 3 #####
+n_strong_modules <- 1
+n_strong_modules <- 3
+## 3
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           n_strong_modules , dir)
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.1, title = "New HIV cut 0.1 Module 3", collection="sCD14", 
+               n_strong_modules = 3)
+
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "HIV_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+name1 <- "0.1nodes.xlsx"
+name2 <- "0.1nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "HIV"
+diff <- "compare_sCD14_HIV"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+
+## list 2, enrichment by diffEnrich, not enough of genes  #
+
+### 
+
+
+######################## LPS GENUS 20% 1% ###############
+CVDir <- "LPS_Unclassified_Genus_Global_100_50_20_1_3_2foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Genus_20_1_LPS"
+micro_name <- "(Genus 20 1)"
+Y <- LPS
+n_na_LPS
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = Y, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+
+edge_cut <- 0.1 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], Y = Y, 
+              run = run ,
+              edge_cut =edge_cut , dir )
+#### get module 1, 3 #####
+n_strong_modules <- 1
+
+## 3
+n_strong_modules <- 1
+edges <- c(0.1, 0.2, 0.3, 0.4)
+corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier], Y = Y, 
+               run = run ,
+               n_strong_modules , dir, edges)
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           n_strong_modules , dir)
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.2, title = "New LPS cut 0.2 Module 1", collection="sCD14", 
+               n_strong_modules = 1)
+
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "LPS_Unclassified_Genus_Global_100_50_20_1_3_2foldCV/")
+
+name1 <- "0.1nodes.xlsx"
+name2 <- "10.1nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "LPS"
+diff <- "compare_sCD14_LPS"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+list1 <- read.xlsx( paste0(dir1, "Genus_20_1_sCD14Module5genelists.xlsx") )
+list1_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list1$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list1_pe$enrich_table , 
+           file = paste0(dir1, "diffEnrich_kegg.xlsx"))
+
+## list 2, enrichment by diffEnrich, not enough of genes  #
+list2 <- read.xlsx( paste0(dir2, "Genus_20_1_LPSModule1genelists.xlsx") )
+
+print("Num of genes in total: ")
+nrow(list2)
+
+list2_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list2$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list2_pe$enrich_table , 
+           file = paste0(dir2, "diffEnrich_kegg.xlsx"))
+### 
+print("Num of pathways in total: ")
+nrow(list2_pe$enrich_table)
+## finally ##
+diff_enrich <- diffEnrich(list1_pe = list1_pe, list2_pe = list2_pe,
+                          method = "none", cutoff = 0.05)
+
+write.xlsx(diff_enrich$de_table , 
+           file = paste0(dir2, diff, "diffEnrich.xlsx"))
+
+plotFoldEnrichment(de_res = diff_enrich,pval = 0.05, N = 10 )
+ggsave(filename = paste0(diff, ".tiff"),device = NULL,
+       path = dir2 , dpi = 300, compression = "lzw", 
+       width = 7, height = 5, units = "in" )
+
+################# Genus 20% 1 % ###########
+################### LTA ##############
+
+CVDir <- "LTA_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Genus_20_1_LTA"
+micro_name <- "(Genus 20 1)"
+Y <- LTA
+
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = Y, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+
+edge_cut <- 0.1 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], Y = Y, 
+              run = run ,
+              edge_cut =edge_cut , dir )
+#### get module 1, 3 #####
+n_strong_modules <- 1
+
+## 3
+n_strong_modules <- 1
+edges <- c(0.1, 0.2, 0.3, 0.4)
+corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier], Y = Y, 
+               run = run ,
+               n_strong_modules , dir, edges)
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           n_strong_modules , dir)
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.2, title = "New LTA cut 0.2 Module 1", collection="sCD14", 
+               n_strong_modules = 1)
+
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "LTA_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+name1 <- "0.1nodes.xlsx"
+name2 <- "10.1nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "LTA"
+diff <- "compare_sCD14_LTA"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+list1 <- read.xlsx( paste0(dir1, "Genus_20_1_sCD14Module5genelists.xlsx") )
+list1_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list1$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list1_pe$enrich_table , 
+           file = paste0(dir1, "diffEnrich_kegg.xlsx"))
+
+## list 2, enrichment by diffEnrich, not enough of genes  #
+list2 <- read.xlsx( paste0(dir2, "Genus_20_1_LTAModule1genelists.xlsx") )
+
+print("Num of genes in total: ")
+nrow(list2)
+
+list2_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list2$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list2_pe$enrich_table , 
+           file = paste0(dir2, "diffEnrich_kegg.xlsx"))
+### 
+print("Num of pathways in total: ")
+nrow(list2_pe$enrich_table)
+## finally ##
+diff_enrich <- diffEnrich(list1_pe = list1_pe, list2_pe = list2_pe,
+                          method = "none", cutoff = 0.05)
+summary(diff_enrich)
+
+################### Family 20% 1% sCD14 ################
+
+CVDir <- "CD14_Unclassified_Family_Global_100_50_20_1_3_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Family_20_1_CD14"
+micro_name <- "(Family 20 1)"
+Y <- CD14
+
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = Y, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+
+edge_cut <- 0.1 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], Y = Y, 
+              run = run ,
+              edge_cut =edge_cut , dir )
+#### get module 1, 3 #####
+n_strong_modules <- 1
+
+## 3
+n_strong_modules <- 1
+edges <- c(0.1, 0.2, 0.3, 0.4)
+corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier], Y = Y, 
+               run = run ,
+               n_strong_modules , dir, edges)
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           n_strong_modules , dir)
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.1, title = "Family sCD14 0.1 Module 1", collection="sCD14", 
+               n_strong_modules = 1)
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.2, title = "Family sCD14 0.2 Module 1", collection="sCD14", 
+               n_strong_modules = 1)
+
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Family_Global_100_50_20_1_3_4foldCV/")
+
+name1 <- "0.1nodes.xlsx"
+name2 <- "10.1nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "family_sCD14"
+diff <- "compare_sCD14_family"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+list1 <- read.xlsx( paste0(dir1, "Genus_20_1_sCD14Module5genelists.xlsx") )
+list1_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list1$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list1_pe$enrich_table , 
+           file = paste0(dir1, "diffEnrich_kegg.xlsx"))
+
+## list 2, enrichment by diffEnrich, not enough of genes  #
+list2 <- read.xlsx( paste0(dir2, "Family_20_1_CD14Module1genelists.xlsx") )
+
+print("Num of genes in total: ")
+nrow(list2)
+
+list2_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list2$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list2_pe$enrich_table , 
+           file = paste0(dir2, "diffEnrich_kegg.xlsx"))
+### 
+print("Num of pathways in total: ")
+nrow(list2_pe$enrich_table)
+## finally ##
+diff_enrich <- diffEnrich(list1_pe = list1_pe, list2_pe = list2_pe,
+                          method = "none", cutoff = 0.05)
+summary(diff_enrich)
+write.xlsx(diff_enrich$de_table , 
+           file = paste0(dir2, diff, "diffEnrich.xlsx"))
+
+plotFoldEnrichment(de_res = diff_enrich,pval = 0.05, N = 0 )
+ggsave(filename = paste0(diff, ".tiff"),device = NULL,
+       path = dir2 , dpi = 300, compression = "lzw", 
+       width = 7, height = 5, units = "in" )
+
+
+################################################### 
+################## genus 40% 1% sCD14 ###########
+
+CVDir <- "CD14_Unclassified_Genus_Global_100_50_40_1_1_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Genus_40_1_CD14"
+micro_name <- "(Genus 40 1)"
+Y <- CD14
+
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = Y, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+
+edge_cut <- 0.1 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier] , Y = Y, 
+              run = run ,
+              edge_cut = edge_cut , dir )
+
+#### get module 1, 3 #####
+n_strong_modules <- 1
+n_strong_modules <- 2
+n_strong_modules <- 3
+
+## 3
+n_strong_modules <- 1
+edges <- c(0.1, 0.4)
+corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier], Y = Y, 
+               run = run ,
+               n_strong_modules, dir, edges)
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           1, dir)
+
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           2, dir)
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           3, dir)
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.3, title = "40 1 sCD14 0.3 Module 2", collection="sCD14", 
+               n_strong_modules = 2)
+
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.2, title = "40 1 sCD14 0.2 Module 3", collection="sCD14", 
+               n_strong_modules = 3)
+
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.6, title = "40 1 sCD14 0.6 Module 1", collection="sCD14", 
+               n_strong_modules = 1)
+
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_40_1_1_4foldCV/")
+
+name1 <- "0.1nodes.xlsx"
+name2 <- "30.1nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "40_1_sCD14"
+diff <- "Module3_sCD14_prevalence"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+list1 <- read.xlsx( paste0(dir1, "Genus_20_1_sCD14Module5genelists.xlsx") )
+list1_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list1$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list1_pe$enrich_table , 
+           file = paste0(dir1, "diffEnrich_kegg.xlsx"))
+
+## list 2, enrichment by diffEnrich, not enough of genes  #
+list2 <- read.xlsx( paste0(dir2, "Genus_40_1_CD14Module3genelists.xlsx") )
+
+print("Num of genes in total: ")
+nrow(list2)
+
+list2_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list2$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list2_pe$enrich_table , 
+           file = paste0(dir2, diff,"diffEnrich_kegg.xlsx"))
+### 
+print("Num of pathways in total: ")
+nrow(list2_pe$enrich_table)
+## finally ##
+diff_enrich <- diffEnrich(list1_pe = list1_pe, list2_pe = list2_pe,
+                          method = "none", cutoff = 0.05)
+summary(diff_enrich)
+write.xlsx(diff_enrich$de_table , 
+           file = paste0(dir2, diff, "diffEnrich.xlsx"))
+
+plotFoldEnrichment(de_res = diff_enrich,pval = 0.05, N = 2 )
+ggsave(filename = paste0(diff, ".tiff"),device = NULL,
+       path = dir2 , dpi = 300, compression = "lzw", 
+       width = 7, height = 5, units = "in" )
+
+
+################## genus 60% 1% sCD14 #########
+CVDir <- "CD14_Unclassified_Genus_Global_100_50_60_1_1_4foldCV/"
+dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
+load(paste0(dir, "SmCCNetWeights.RData"))
+
+run <- "Genus_60_1_CD14"
+micro_name <- "(Genus 60 1)"
+Y <- CD14
+
+###### edge cut and through this, find the best (strongest) sub-networks ########3
+edges_i <- c(0, 0.1, 0.15,  0.25, 0.4, 0.5)
+## 1
+cut_get_list_corr(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                  X2 = mibi[, mibi_outlier], Y = Y, 
+                  run = run ,
+                  edges_i, dir, micro_name)
+
+edge_cut <- 0.15 ######### 0.3 is for cytoscape 
+## 2 
+robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier] , Y = Y, 
+              run = run ,
+              edge_cut = edge_cut , dir )
+
+#### get module 1, 3 #####
+n_strong_modules <- 2
+
+## 3
+edges <- c(0.15, 0.25)
+corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier], Y = Y, 
+               run = run ,
+               n_strong_modules, dir, edges)
+## 4
+robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                           X2 = mibi[, mibi_outlier],Y = Y, 
+                           run = run,
+                           n_strong_modules, dir)
+
+######### From here, it is time to generate the network plot #########
+cytoscapePing ()
+cytoscapeVersionInfo ()
+
+## 5
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.15, title = "60 1 sCD14 0.15 Module 2", collection="sCD14", 
+               n_strong_modules = 2)
+
+make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+               X2 = mibi[, mibi_outlier],
+               edge_cut = 0.25, title = "60 1 sCD14 0.25 Module 2", collection="sCD14", 
+               n_strong_modules = 2)
+
+
+##############6  nodes overlapping ###############
+dir1 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/")
+
+dir2 <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/",
+                "CD14_Unclassified_Genus_Global_100_50_60_1_1_4foldCV/")
+
+name1 <- "0.1nodes.xlsx"
+name2 <- "20.15nodes.xlsx"
+
+title1 <- "sCD14"
+title2 <- "60_1_sCD14"
+diff <- "Module2_sCD14_prevalence"
+
+######### 2 by 2 tables and Fisher Exact Test ##########
+lapping_nodes <-  nodes_two_by_two(dir1, dir2, X1, X2, title1, title2)
+lapping_nodes$fisher_TwoOmics <- sum_fisher(lapping_nodes$TwoOmics)
+lapping_nodes$fisher_Micro <- sum_fisher(lapping_nodes$Micro )
+lapping_nodes$fisher_Trans <- sum_fisher(lapping_nodes$Trans ) 
+write.xlsx(lapping_nodes, file = paste0(dir, 0.1, diff, ".xlsx"),
+           row.names = TRUE  )
+
+## differential enrichment analysis #
+kegg_hsa <- get_kegg('hsa')
+######## list 1, enrichment by diffEnrich ###########
+list1 <- read.xlsx( paste0(dir1, "Genus_20_1_sCD14Module5genelists.xlsx") )
+list1_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list1$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list1_pe$enrich_table , 
+           file = paste0(dir1, "diffEnrich_kegg.xlsx"))
+
+## list 2, enrichment by diffEnrich, not enough of genes  #
+list2 <- read.xlsx( paste0(dir2, "Genus_60_1_CD14Module2genelists.xlsx") )
+
+print("Num of genes in total: ")
+nrow(list2)
+
+list2_pe <- pathEnrich(gk_obj = kegg_hsa, gene_list = list2$ENTREZID, cutoff = 0.2, N = 2)
+write.xlsx(list2_pe$enrich_table , 
+           file = paste0(dir2, diff,"diffEnrich_kegg.xlsx"))
+### 
+print("Num of pathways in total: ")
+nrow(list2_pe$enrich_table)
+## finally ##
+diff_enrich <- diffEnrich(list1_pe = list1_pe, list2_pe = list2_pe,
+                          method = "none", cutoff = 0.05)
+summary(diff_enrich)
+write.xlsx(diff_enrich$de_table , 
+           file = paste0(dir2, diff, "diffEnrich.xlsx"))
 
 
 #################### better contour plots ###############
@@ -172,6 +836,12 @@ optimize_contour(CVDir, l1_max = 0.8, l2_max = 0.8)
 ######### genus ##########33
  CVDir <- "CD14_Unclassified_Genus_Global_100_50_20_3_1_4foldCV/"
 optimize_contour(CVDir, l1_max = 0.6, l2_max = 0.6)
+
+CVDir <- "CD14_Unclassified_Genus_Global_100_50_40_1_1_4foldCV/"
+optimize_contour(CVDir, l1_max = 0.8, l2_max = 0.8)
+
+CVDir <- "CD14_Unclassified_Genus_Global_100_50_60_1_1_4foldCV/"
+optimize_contour(CVDir, l1_max = 0.55, l2_max = 0.55)
 
 ######### family ###########
 CVDir <- "CD14_Unclassified_Family_Global_100_50_20_3_1_4foldCV/"
