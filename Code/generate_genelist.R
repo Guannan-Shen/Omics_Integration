@@ -79,7 +79,7 @@ get_tmm <- function(){
 # #variance
 # var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame()
 # colnames(var_tmm) <- "values"
-# var_tmm <- var_tmm %>% filter(values < 100)
+# var_tmm <- var_tmm %>% filter(values < 200)
 # 
 # var_rlog <- get_rlog()$df %>% apply(., 2, var) %>% as.data.frame()
 # colnames(var_rlog) <- "values"
@@ -89,7 +89,7 @@ get_tmm <- function(){
 # 
 # mean_tmm <- get_tmm()$df %>% apply(., 2, mean) %>% as.data.frame()
 # colnames(mean_tmm) <- "values"
-# mean_tmm <- mean_tmm %>% filter(values < 100)
+# mean_tmm <- mean_tmm %>% filter(values < 300)
 
 # var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame()
 # colnames(var_tmm) <- "values"
@@ -97,7 +97,7 @@ get_tmm <- function(){
 # colnames(mean_tmm) <- "values"
 
 ## density plot
-density_values <- function(data){
+density_values <- function(data, xlab){
   p = ggplot(data, aes(x = values)) + 
     # alpha controls the transparency 
     geom_density(alpha = 0.6) +
@@ -110,14 +110,28 @@ density_values <- function(data){
     theme(legend.position="bottom", legend.box = "horizontal") +
     labs(caption = 
            # unlist(strsplit( as.character( substitute(data) ), "_", fixed = TRUE))[2]
-           as.character( substitute(data)) )
+           as.character( substitute(data)) ,
+         y = "Density",
+         x = xlab) +
+    theme(axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          axis.title.x = element_text(size = 18),
+          axis.title.y = element_text(size = 18),
+          legend.text = element_text(size=16),
+          legend.title = element_text(size=16),
+          text=element_text(family="Arial"))
   print(p)
 }
 
 # # density_values(var_rlog)
-# density_values(var_tmm   )
-# # density_values(mean_rlog)
-# density_values(mean_tmm )
+# density_values(var_tmm, xlab = "Variances of Genes (TMM Normalized)" )
+# # # density_values(mean_rlog)
+# # density_values(mean_tmm, xlab = "Means of Genes (TMM Normalized)" )
+# ggsave(filename =  paste0( "Variance < 200 trans", ".tiff"), device = NULL,
+#        path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
+#        dpi = 300, compression = "lzw", 
+#        width = 7, height = 5, units = "in")
+
 
 elbow_var_tmm <- function(vars_cutoffs){
   # get the data, tmm
