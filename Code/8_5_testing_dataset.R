@@ -92,6 +92,35 @@ micro_level <- "genus"
 micro_data <- load_filtered_micro_level_samples(micro_level,  
                                                 prevalence = prev, RA = ra, wd = "Ubuntu",
                                                 collapse = FALSE)
+
+get_prev_ra <- function(micro_data_ra){
+  data = micro_data_ra
+  taxa = colnames(data)
+  prev = apply(data, 2, function(x){
+    ( ( sum(x!=0)/nrow(data) ) %>% round(., 4) ) *100
+  })
+  max_ra = apply(data, 2, function(x){
+    ( ( max(x) ) %>% round(., 4) ) 
+  })
+  df = data.frame(Taxa = taxa, Prevalence = prev, RA = max_ra) %>%  
+    dplyr::filter(Taxa !=  "Other")  %>%    dplyr::mutate(
+     `60% 3%` = ifelse ( (Prevalence >= 60) & (RA >= 3), "60% 3%", "Not"), 
+     `60% 1%` = ifelse ( (Prevalence >= 60) & (RA >= 1), "60% 1%", "Not"),
+     `40% 3%` = ifelse ( (Prevalence >= 40) & (RA >= 3), "40% 3%", "Not"),
+     `40% 1%` = ifelse ( (Prevalence >= 40) & (RA >= 1), "40% 1%", "Not"),
+     `20% 3%` = ifelse ( (Prevalence >= 20) & (RA >= 3), "20% 3%", "Not"),
+     `20% 1%` = ifelse ( (Prevalence >= 20) & (RA >= 1), "20% 1%", "Not")
+  )
+      return(df)
+}
+
+# df = get_prev_ra(micro_data[[1]])
+# write.xlsx(df, 
+#            file = paste0(dir,  "genus_taxa.xlsx"))
+# nrow(df)
+# 33 taxa are shared across 60 1 and 40 3 genus
+# sum( (df$`60% 1%` != "Not")  &    (df$`40% 3%` != "Not")  ), 
+
 micro_clr <- micro_data[[2]] %>% as.data.frame()
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)
