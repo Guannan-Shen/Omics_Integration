@@ -14,7 +14,7 @@ getwd()
 dir = "~/Documents/gitlab/Omics_Integration/"
 # small functions, %nin%, %||%, isnothing
 source( paste0(dir, "Code/small_fun.R") )
-
+source( paste0(dir, "Code/put_together.R") )
 ########## import dataset ################
 # clinical data 
 source( paste0(dir, "Code/6_5_clean_clinical.R") )
@@ -93,34 +93,6 @@ micro_data <- load_filtered_micro_level_samples(micro_level,
                                                 prevalence = prev, RA = ra, wd = "Ubuntu",
                                                 collapse = FALSE)
 
-get_prev_ra <- function(micro_data_ra){
-  data = micro_data_ra
-  taxa = colnames(data)
-  prev = apply(data, 2, function(x){
-    ( ( sum(x!=0)/nrow(data) ) %>% round(., 4) ) *100
-  })
-  max_ra = apply(data, 2, function(x){
-    ( ( max(x) ) %>% round(., 4) ) 
-  })
-  df = data.frame(Taxa = taxa, Prevalence = prev, RA = max_ra) %>%  
-    dplyr::filter(Taxa !=  "Other")  %>%    dplyr::mutate(
-     `60% 3%` = ifelse ( (Prevalence >= 60) & (RA >= 3), "60% 3%", "Not"), 
-     `60% 1%` = ifelse ( (Prevalence >= 60) & (RA >= 1), "60% 1%", "Not"),
-     `40% 3%` = ifelse ( (Prevalence >= 40) & (RA >= 3), "40% 3%", "Not"),
-     `40% 1%` = ifelse ( (Prevalence >= 40) & (RA >= 1), "40% 1%", "Not"),
-     `20% 3%` = ifelse ( (Prevalence >= 20) & (RA >= 3), "20% 3%", "Not"),
-     `20% 1%` = ifelse ( (Prevalence >= 20) & (RA >= 1), "20% 1%", "Not")
-  )
-      return(df)
-}
-
-# df = get_prev_ra(micro_data[[1]])
-# write.xlsx(df, 
-#            file = paste0(dir,  "genus_taxa.xlsx"))
-# nrow(df)
-# 33 taxa are shared across 60 1 and 40 3 genus
-# sum( (df$`60% 1%` != "Not")  &    (df$`40% 3%` != "Not")  ), 
-
 micro_clr <- micro_data[[2]] %>% as.data.frame()
 # rescale to mean 0 and variance 1 
 mibi <- rescale_microbiome(micro_clr)
@@ -157,6 +129,65 @@ print(paste0("Transcriptome cutoffs mean: ", mean_cut, " variance: ", var_cut,
 
 
 #################### summary of prevalence and RA, per Taxon ################
+get_prev_ra <- function(micro_data_ra){
+  data = micro_data_ra
+  taxa = colnames(data)
+  prev = apply(data, 2, function(x){
+    ( ( sum(x!=0)/nrow(data) ) %>% round(., 4) ) *100
+  })
+  max_ra = apply(data, 2, function(x){
+    ( ( max(x) ) %>% round(., 4) ) 
+  })
+  df = data.frame(Taxa = taxa, Prevalence = prev, RA = max_ra) %>%  
+    dplyr::filter(Taxa !=  "Other")  %>%    dplyr::mutate(
+      `60% 3%` = ifelse ( (Prevalence >= 60) & (RA >= 3), "60% 3%", "N"), 
+      `60% 1%` = ifelse ( (Prevalence >= 60) & (RA >= 1), "60% 1%", "N"),
+      `40% 3%` = ifelse ( (Prevalence >= 40) & (RA >= 3), "40% 3%", "N"),
+      `40% 1%` = ifelse ( (Prevalence >= 40) & (RA >= 1), "40% 1%", "N"),
+      `20% 3%` = ifelse ( (Prevalence >= 20) & (RA >= 3), "20% 3%", "N"),
+      `20% 1%` = ifelse ( (Prevalence >= 20) & (RA >= 1), "20% 1%", "N")
+    )
+  return(df)
+}
+
+sim_micro_names_colon <- function(micro_names){
+  p2 = length(micro_names)
+  micro_names_sim = rep(NULL, p2)
+  
+  for (i in 1:p2){
+    new_vector = unlist(strsplit(micro_names[i], fixed = T, split = ":"))
+    test_name = new_vector[-c(1,2)] %>% paste(., collapse = ".")
+    if (length(new_vector) == 1 ) {
+      micro_names_sim[i] = micro_names[i]
+    } else if ( length(new_vector) == 2 ){  
+      micro_names_sim[i] <-  new_vector[-1] %>%
+        paste(., collapse = ".")
+    } else if(test_name == 2){
+      micro_names_sim[i] <- "4C0d-2"
+    }
+    else{
+      micro_names_sim[i] <-  new_vector[-c(1,2)] %>%
+        paste(., collapse = ".")}
+  }
+  return(micro_names_sim)
+}
+
+# df = get_prev_ra(micro_data[[1]]) %>% dplyr::mutate(Taxa = sim_micro_names_colon(df$Taxa) )
+# df %>% dplyr::filter(`40% 1%` == "N")
+# write.xlsx(df %>% dplyr::filter(`40% 1%` == "N"), 
+#            file = paste0(dir,  "only_20_1_genus.xlsx"))
+# 
+# df %>% dplyr::filter((`60% 1%` == "N") & (`40% 1%` == "40% 1%") )
+# write.xlsx(df %>% dplyr::filter((`60% 1%` == "N") & (`40% 1%` == "40% 1%") ), 
+#            file = paste0(dir,  "upto_40_1_genus.xlsx"))
+# 
+# write.xlsx(df %>% dplyr::filter( (`60% 1%` != "N" )  ), 
+#            file = paste0(dir,  "upto_60_1_genus.xlsx"))
+# write.xlsx(df, 
+#            file = paste0(dir,  "genus_taxa.xlsx"))
+# nrow(df)
+# 33 taxa are shared across 60 1 and 40 3 genus
+# sum( (df$`60% 1%` != "Not")  &    (df$`40% 3%` != "Not")  ), 
 
 
 ######################## descriptive ################
