@@ -5,8 +5,6 @@ library(openxlsx)
 library(tidyverse)
 library(magrittr)
 
-library(caret)   # for cross validation
-
 library(SmCCNet)
 library(parallel)
 
@@ -65,7 +63,7 @@ get_CVDir <- function(X1, X2, Y, K, CCcoef, Omics_name, ntrys){
 }
 
 ######### run CV ##################
-CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2, pen1, pen2, NoTrait, bytrait){
+CV_lambda <- function(X1, X2, Y, K, CCcoef, s1, s2, c_pen1, c_pen2, NoTrait, bytrait){
   #
   print("K fold and K threads!")
   # Set a CV directory.
@@ -82,8 +80,13 @@ print("CCcoef can be NULL or length 3 numeric vectors.")
 # s1 = 0.6; s2 = 0.9 # Feature sampling proportions.
 SubsamplingNum = 1000 # Number of subsamples.
 # Create sparsity penalty options.
-pen1 = seq(.05, pen1, by = .05)
-pen2 = seq(.05, pen2, by = .05)
+pen10 = c_pen1[1]
+pen1 = c_pen1[2]
+pen20 = c_pen2[1]
+pen2 = c_pen2[2]
+
+pen1 = seq(pen10, pen1, by = .05)
+pen2 = seq(pen20, pen2, by = .05)
 P1P2 = expand.grid(pen1, pen2)
 #
 # Map (l1, l2) to (c1, c2).
@@ -97,6 +100,7 @@ c2 = sqrt(p2 * s2) * P1P2[ , 2]; c2[c2 < 1] = 1
 # dir.create(CVDir)
 # The standardized training
 # and test data sets will be saved under the CV directory.
+# set.seed(12345)
 set.seed(sample.int(1e5, 1)) # Set random seed.
 
 foldIdx <- split(1:n, sample(1:n, K))
