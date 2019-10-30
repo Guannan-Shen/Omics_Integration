@@ -45,6 +45,9 @@ wrapper_load_Omics <- function(genelist, micro_level, prev_cutoff, ra_cutoff){
   if(genelist == "Inteferome"){
     
   }
+  else if(genelist == "Global"){
+    
+  }
 }
 
 
