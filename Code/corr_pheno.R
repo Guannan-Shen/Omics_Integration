@@ -7,6 +7,7 @@ library(magrittr)
 # directory, Ubuntu this is directory to source files 
 dir = "~/Documents/gitlab/Omics_Integration/"
 source( paste0(dir, "Code/put_together.R") )
+source( paste0(dir, "Code/pca_getPC1.R") )
 
 ############# load in clinical data ###############
 # load all datasets 
@@ -32,7 +33,7 @@ all_modules <- function(modules){
 }
 
 module_0 <- function(abar, modules){
-  print("All features excluded in identified modules are grouped as Module 0.")
+  print("All features not in identified modules are grouped as Module 0.")
   all_nodes = all_modules(modules)
   # all features indices
   features = 1:ncol(abar)
@@ -102,17 +103,19 @@ levels_mo_feature <- function(X1, X2, modules){
 
 ######### get levels (rescaled) values of features from colnames of 
 levels_mo_feature_mat <- function(X1, X2, mats){
-  n_networks = length(modules)
+  n_networks = length(mats)
   x = cbind(X1, X2)
   d_list = vector("list", n_networks)
   for (i in 1:n_networks) {
-    mat_index = colnames(reduced_sim[[i]])
+    mat_index = colnames(mats[[i]])
     d_list[[i]] = x[,  mat_index]
   }
   return(d_list)
 }
 
-
+# stats::cor(fea_list[[1]], LPS, method = "pearson"
+#            , use = "pairwise.complete.obs" 
+# )
 
 ########### get pearson correlations against the phenotype ##########
 corr_list_module <- function(fea_list, pheno, modules_index, modulelabel){
@@ -121,7 +124,43 @@ corr_list_module <- function(fea_list, pheno, modules_index, modulelabel){
   res = vector("list", n_networks)
   for (i in 1:n_networks){
     # pearson correlations
-    res[[i]] = stats::cor(fea_list[[i]], pheno, method = "pearson") %>% as.data.frame() %>% stack() %>% 
+    res[[i]] = stats::cor(fea_list[[i]], pheno, method = "pearson"
+                          
+                          ) %>% as.data.frame() %>% stack() %>% 
+      as.data.frame()  %>% dplyr::mutate(ind = paste0(modulelabel, modules_index[i]) ) %>%
+      dplyr::select(values, ind)
+  }
+  # combine data.frames from a list into one dataframe
+  df = do.call("rbind", res)
+  return(df)
+}
+
+corr_list_module_noNA <- function(fea_list, pheno, modules_index, modulelabel, n_na){
+  print("No missing values")
+  n_networks = length(fea_list)
+  res = vector("list", n_networks)
+  for (i in 1:n_networks){
+    # pearson correlations
+    res[[i]] = stats::cor(fea_list[[i]][-n_na,], pheno[-n_na,], method = "pearson"
+                          
+    ) %>% as.data.frame() %>% stack() %>% 
+      as.data.frame()  %>% dplyr::mutate(ind = paste0(modulelabel, modules_index[i]) ) %>%
+      dplyr::select(values, ind)
+  }
+  # combine data.frames from a list into one dataframe
+  df = do.call("rbind", res)
+  return(df)
+}
+
+corr_list_module_NA <- function(fea_list, pheno, modules_index, modulelabel){
+  print("No missing values")
+  n_networks = length(fea_list)
+  res = vector("list", n_networks)
+  for (i in 1:n_networks){
+    # pearson correlations
+    res[[i]] = stats::cor(fea_list[[i]], pheno, method = "pearson"
+                          , use = "pairwise.complete.obs" 
+    ) %>% as.data.frame() %>% stack() %>% 
       as.data.frame()  %>% dplyr::mutate(ind = paste0(modulelabel, modules_index[i]) ) %>%
       dplyr::select(values, ind)
   }
@@ -131,7 +170,7 @@ corr_list_module <- function(fea_list, pheno, modules_index, modulelabel){
 }
 
 ########### grouped dot plot #############
-corr_modules <- function(data, groupby, y, xlab, ylab){
+corr_modules <- function(data, groupby, y, xlab, ylab, run, dir){
   p = ggplot(data, aes(x=groupby, y=y)) + 
     # dot plot
     # geom_dotplot(binaxis='y', stackdir='center', dotsize = dotsize)+
@@ -146,21 +185,138 @@ corr_modules <- function(data, groupby, y, xlab, ylab){
     #              geom="crossbar", width=0.3) +
     labs(x = xlab, y = ylab) +
     coord_flip() +
-    theme(axis.text.x = element_text(size = 15),
-          axis.text.y = element_text(size = 15),
-          axis.title.x = element_text(size = 16),
-          axis.title.y = element_text(size = 16))
+    theme(axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          axis.title.x = element_text(size = 18),
+          axis.title.y = element_text(size = 18)) +
+    theme(text=element_text(family="Arial"))
   print(p)
+  ggsave(filename = paste0(run, "corre_with_pheno.tiff"),device = NULL,
+         path = dir, dpi = 300, compression = "lzw" )
 }
 
+########### partial correlation ##############
+residual_df <- function(df, adjustfor){
+    mat = apply(df, 2, function(x){
+        residuals(lm(x ~ adjustfor ))
+      })
+    n_obs = nrow(df)
+    ######## merge list of diff length to dataframe #######3
+    seq.max = seq_len(max(n_obs))
+    res =  sapply(mat, "[", i = seq.max)
+    return(res)
+  }
+
+############## summary #############
+corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir, edges){
+  print("Please load the abar, modules and Ws first, this one needs the Y!")
+  print(run)
+  print("Check the dimension of microbiome dataset: ")
+  mibi[, mibi_outlier] %>% ncol() %>% print()
+  # number of feature
+  p1 <-  ncol(X1)
+  p2 <-  ncol(X2)
+  n_networks <- length(modules)
+  ####3 check datasets
+  if( (dim(abar)[1] == (p1 + p2) ) ) 
+  {print("We are good to go!")} else 
+  { print("Wrong Datasets (X1 X2 dimensions not match with ones used in SmCCNet)!") }
+  # feature names 
+  rna_names <- colnames(X1)
+  micro_names <- colnames(X2)
+  fea_names <- colnames(abar)
+  ############### including the module 0 ############ 
+  module_s_0 <- add_module_0(abar, modules)
+  ########## correlation against the pheotype ###########
+  # the rescaled value for each module
+  fea_list <- levels_mo_feature(X1 , 
+                                X2 , 
+                                module_s_0)
+  ### the stacked dataframe of pearson correlation against the CD14 ##########
+  modules_Pearson <- corr_list_module_NA (fea_list, Y, 0:n_networks, modulelabel = "module")
+  ########### get correlation for different edges cuts #########
+  adj_cut <- vector("list", length(edges))
+  features_cut <- vector("list", length(edges))
+  trimmed_Pearson <- vector("list", length(edges))
+  for (i in 1: length(edges)){
+    edge_cut <- edges[i]
+    ############### get the adjacency matrix ##############
+    tmp <- signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier], 
+                                 X2 = mibi[, mibi_outlier], abar,
+                                 modules, edgecut = edge_cut)
+    adj_cut[[i]] <- tmp
+    ############### get feature levels  ##############
+    tmp2 <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
+                                  X2 = mibi[, mibi_outlier], tmp)
+    features_cut[[i]] <- tmp2
+    ######## pearson correlation against sCD14 ##########
+    
+    # trimmed_Pearson[[i]] <- corr_list_module_noNA(tmp2, Y, 1:n_networks, 
+    #                          modulelabel = paste(edge_cut, "trimmed module"), n_na_LPS)
+    trimmed_Pearson[[i]] <- corr_list_module(tmp2, Y, 1:n_networks, 
+                                             modulelabel = paste(edge_cut, "trimmed module"))
+  }
+  
+  ###### combine all trimmed correlation 
+  trimmed_Pearson_all <- do.call("rbind", trimmed_Pearson)
+  modules_cor <- rbind(modules_Pearson, trimmed_Pearson_all)
+  ########## the plot ###############
+  corr_modules(modules_cor, modules_cor$ind, modules_cor$values,  "", "Pearson's r",
+               run, dir)
+  ########### PC1s against the phenotype ###########
+  ## original ones 
+  pc1_modules <- do.call(  "cbind", get_pc1_listfeature(fea_list))
+  
+  
+  n_modules <- length(n_strong_modules)
+  
+  
+  ## trimmed ones (PC1s)
+  mat <- matrix(NA, nrow( fea_list[[n_strong_modules[1]]]), 
+                length(edges)*n_modules ) 
+  for (i in 1: length(edges)){
+    mat[ , (i*n_modules + 1 - n_modules) :( i*n_modules )  ] <- 
+      get_pc1_listfeature(features_cut[[i]]) %>% unlist
+    
+  }
+  
+  ## combind all PC1s 
+  pc1_cor <- cbind(pc1_modules, mat)
+  names_edges <- paste(edges, "Trimmed Module" )
+  all_names <- rep(NA, n_modules*length(edges))
+  for( i in 1:length(names_edges) ){
+    all_names[(i*n_modules + 1 - n_modules) :( i*n_modules )]  <- 
+                 paste(names_edges[i], n_strong_modules)
+  }
+  colnames(pc1_cor) <- c(paste("Module", 0:n_networks), all_names )
+  ## PC1s correlation against Phenotype ######33
+  df <- cor_test_df(pc1_cor, Y[,1]) %>% round(., 3) %>% as.data.frame()
+  # p-value
+  df1 <- melt(df[1,], na.rm = TRUE) %>% as.data.frame() %>% set_colnames(c("Modules",
+                                                                           "p-value"))
+  # rearrange the data
+  data1 <- df1[c( (n_networks + 1):1, 
+                  (n_networks + 1 + length(edges)*n_modules): (n_networks + 1 + 1)  ) , ]
+  # Pearson's r 
+  df2 <- melt(df[2,], na.rm = TRUE) %>% as.data.frame() %>% set_colnames(c("Modules",
+                                                                           "Pearson's r"))
+  data2 <- df2[c( (n_networks + 1):1, 
+                  (n_networks + 1 + length(edges)*n_modules): (n_networks + 1 + 1)  ) , ]
+  pc1_sum <- cbind(data1, data2[,2], paste0(data2[,2]," (", data1[,2],  ")")) %>%
+    set_colnames(c("Modules", "p value", "Pearson's r", "Pearson's  r (p value)"))
+  #### save the summary ####333
+  write.xlsx(pc1_sum, 
+             file = paste0(dir, run, "PC1_against_Pheno.xlsx"))
+  
+}
 
 ################ test run #################
-# fea_list <- levels_mo_feature(X1 = filtered_rlog[, filtered_outlier], 
-#                   X2 = mibi[, mibi_outlier], 
+# fea_list <- levels_mo_feature(X1 = filtered_rlog[, filtered_outlier],
+#                   X2 = mibi[, mibi_outlier],
 #                   module_s_0)
 # 
-# fea_trimmed <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier], 
-#                       X2 = mibi[, mibi_outlier], 
+# fea_trimmed <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
+#                       X2 = mibi[, mibi_outlier],
 #                       reduced_sim)
 # 
 # test <- corr_list_module(fea_list, CD14, 0:5, modulelabel = "module")
@@ -170,3 +326,5 @@ corr_modules <- function(data, groupby, y, xlab, ylab){
 # mo_cor_test <- rbind(test, test1)
 # 
 # corr_modules(mo_cor_test, mo_cor_test$ind, mo_cor_test$values,  "", "Correlation")
+# corr_modules(test_modules, test_modules$ind, test_modules$values,  "", "Pearson's r",
+#              run, dir)
