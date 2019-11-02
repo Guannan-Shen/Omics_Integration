@@ -82,7 +82,9 @@ source( paste0(dir, "Code/enrichment.R") )
 # t-test and linear regression vs HIV-status 
 
 ```{r intraClins}
-data <- cbind(ID, HIV, sex, age, LPS, LTA, CD14) %>% as.data.frame()
+df = nonrescaled_cli()
+
+data <- cbind(ID, HIV, sex, age, df$LPS, df$LTA, df$CD14) %>% as.data.frame()
 print("Simple t-test")
 sapply(colnames(data)[5:7], function(x){
   print(x)
@@ -198,9 +200,12 @@ reduced_sim <- signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier],
                                         X2 = mibi[, mibi_outlier], abar,
                                         modules, edgecut = edge_cut)
 
+
 fea_trimmed <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
                       X2 = mibi[, mibi_outlier],
                       reduced_sim)
+fea_trimmed
+
 
 test_trimmed <- corr_list_module(fea_trimmed, CD14, 1:5, modulelabel = "trimmed module")
 
