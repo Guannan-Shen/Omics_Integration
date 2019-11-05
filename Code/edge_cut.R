@@ -10,6 +10,7 @@ library(RCy3)
 library(WGCNA)
 library(limma)
 library(diffEnrich)
+library(UpSetR)
 ####### from distance matrix, similarity matrix to adjacency matrix 
 ## or from distance matrix to nodes and edges
 
@@ -395,13 +396,14 @@ make_cytoscape <- function(abar, modules, X1, X2, edge_cut, title, collection, n
   across_edge <- df_cyto$edges %>% as.data.frame() %>% dplyr::filter(interaction == "Across" )   %>% 
     plyr::arrange(plyr::desc(abs_weight))
   #### save #######
-  write.xlsx(df_cyto$nodes, file = paste0(dir, n_strong_modules, edge_cut, "nodes.xlsx"))
+  write.xlsx(df_cyto$nodes %>% plyr::arrange(group, id), file = paste0(dir, n_strong_modules, edge_cut, "nodes.xlsx"))
   write.xlsx(df_cyto$edges, file = paste0(dir, n_strong_modules, edge_cut, "edges.xlsx"))
   write.xlsx(ranked_edge, file = paste0(dir, n_strong_modules, edge_cut, "ranked_edges.xlsx"))
   write.xlsx(across_edge, file = paste0(dir, n_strong_modules, edge_cut, "across_inter_edges.xlsx"))
 }
 ############# comparing nodes #############
 nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
+  message("X1 must be transcriptome!")
   # number of feature
   p1 <-  ncol(X1)
   p2 <-  ncol(X2)
@@ -421,9 +423,13 @@ nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
   df1 = data_a[data_a$group == "Transcriptome", ]
   df2 = data_b[data_b$group == "Transcriptome", ]
   df = merge(df1,
-             df2,by="id",all=TRUE)
+             df2,by="id",all=TRUE) %>% plyr::arrange(id)
   mat1[2,2] = p1 - nrow(df)
-  df = merge(df1,y = df2,by="id")
+  df = merge(df1,y = df2,by="id") %>% plyr::arrange(id)
+  write.xlsx(df %>% plyr::arrange(id), 
+             file = paste0(dir2, title2, title1, "overlapping_genes.xlsx"),
+             row.names = TRUE  )
+  
   mat1[1,1] = nrow(df)
   mat1[2,1] = nrow(df1)  - nrow(df)
   mat1[1,2] = nrow(df2)  - nrow(df)
@@ -434,7 +440,10 @@ nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
   df = merge(df1,
              df2,by="id",all=TRUE)
   mat2[2,2] = p2 - nrow(df)
-  df = merge(df1,y = df2,by="id")
+  
+  df = merge(df1,y = df2,by="id") %>% plyr::arrange(id)
+  write.xlsx(df , file = paste0(dir2, title2, title1, "overlapping_taxa.xlsx"),
+             row.names = TRUE  )
   mat2[1,1] = nrow(df)
   mat2[2,1] = nrow(df1)  - nrow(df)
   mat2[1,2] = nrow(df2)  - nrow(df)
@@ -443,7 +452,9 @@ nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
   mat3 <- int_22mat()
   df = merge(data_a,y = data_b,by="id",all=TRUE)
   mat3[2,2] = p - nrow(df)
-  df = merge(data_a,y = data_b,by="id")
+  df = merge(data_a,y = data_b,by="id") %>% plyr::arrange(group.x , id)
+  write.xlsx(df, file = paste0(dir2, title2, title1, "overlapping_all.xlsx"),
+             row.names = TRUE  )
   mat3[1,1] = nrow(df)
   mat3[2,1] = nrow(data_a)  - nrow(df)
   mat3[1,2] = nrow(data_b)  - nrow(df)
