@@ -110,9 +110,10 @@ kegg_enrichr <- function(genelist){
   # the usage of call "$" and eval 
   pathways = enrichr( genelist, "KEGG_2019_Human")
   # data
-  kegg = data.frame( pathways[["KEGG_2019_Human"]] ) %>%
-    dplyr::filter(Adjusted.P.value <= 0.2) %>% dplyr::arrange(P.value) %>% 
-    dplyr::select(Term, Overlap, Adjusted.P.value, Genes)
+  kegg = data.frame( pathways[["KEGG_2019_Human"]] ) %>% 
+                   dplyr::mutate(FDR = p.adjust(P.value, method = "BH") ) %>%
+    dplyr::filter(FDR <= 0.2) %>% dplyr::arrange(P.value) %>% 
+    dplyr::select(Term, Overlap, FDR, Genes)
   return( kegg )
 }
 
@@ -125,9 +126,10 @@ GOCC_enrichr <- function(genelist){
   # the usage of call "$" and eval 
   pathways = enrichr( genelist, "GO_Cellular_Component_2018")
   # data
-  kegg = data.frame( pathways[["GO_Cellular_Component_2018"]] )%>%
-    dplyr::filter(Adjusted.P.value <= 0.2) %>% dplyr::arrange(P.value)  %>% 
-    dplyr::select(Term, Overlap, Adjusted.P.value, Genes)
+  kegg = data.frame( pathways[["GO_Cellular_Component_2018"]] ) %>% 
+    dplyr::mutate(FDR = p.adjust(P.value, method = "BH") ) %>%
+    dplyr::filter(FDR <= 0.2) %>% dplyr::arrange(P.value) %>% 
+    dplyr::select(Term, Overlap, FDR, Genes)
   return( kegg )
 }
 
@@ -194,7 +196,7 @@ robust_module_enrich_nodes <- function(abar, modules, X1, X2, Y, run, n_strong_m
   write.xlsx(eg, 
              file = paste0(dir, run, "Module",  n_strong_modules, "genelists.xlsx"))
   
-  barplot(go_test, showCategory = length(go_test$qvalue) ) +
+  p = barplot(go_test, showCategory = length(go_test$qvalue) ) +
     theme(axis.text.x = element_text(size = 16),
           axis.text.y = element_text(size = 16),
           axis.title.x = element_text(size = 18),
@@ -207,7 +209,7 @@ robust_module_enrich_nodes <- function(abar, modules, X1, X2, Y, run, n_strong_m
          path = dir , dpi = 300, compression = "lzw" , 
          width = 10, height = 8, units = "in")
   
-  barplot(gg_test, showCategory = length(gg_test$qvalue) ) +
+ p = barplot(gg_test, showCategory = length(gg_test$qvalue) ) +
     theme(axis.text.x = element_text(size = 16),
           axis.text.y = element_text(size = 16),
           axis.title.x = element_text(size = 18),
