@@ -165,7 +165,7 @@ summary_networks <- function(abar, modules, p1, n){
 }
 
 ###### enrichment analysis for this strong modules 
-robust_module_enrich_nodes <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir){
+robust_module_enrich_nodes <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir, fdrcut){
   print("Please load the abar, modules and Ws first, this one focuses on the Strong/Robust module!")
   print(run)
   print("Check the dimension of microbiome dataset: ")
@@ -185,16 +185,19 @@ robust_module_enrich_nodes <- function(abar, modules, X1, X2, Y, run, n_strong_m
   ###### get the gene symbol ##########
   index = modules[[n_strong_modules]] [modules[[n_strong_modules]] <= p1]
   genes = colnames(abar)[index]
-  ## go and kegg  barplot ###3
-  #### cluster profiler ####3
-  go_test = clusterPro_GO( genes, ontol = "CC", fdrcut = 0.2)
-  gg_test = clusterPro_kegg(genes, fdrcut = 0.2)
+  write.xlsx(genes, 
+             file = paste0(dir, run, "Module",  n_strong_modules, "genesymbols.xlsx"))
   # gene ID transfer
   # get the ENTREZ ID 
   eg = bitr(genes, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
   #### save the genelists 
   write.xlsx(eg, 
              file = paste0(dir, run, "Module",  n_strong_modules, "genelists.xlsx"))
+  ## go and kegg  barplot ###3
+  #### cluster profiler ####3
+  go_test = clusterPro_GO( genes, ontol = "CC", fdrcut = fdrcut)
+  gg_test = clusterPro_kegg(genes, fdrcut = fdrcut)
+ 
   
   p = barplot(go_test, showCategory = length(go_test$qvalue) ) +
     theme(axis.text.x = element_text(size = 16),
