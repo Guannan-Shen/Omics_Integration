@@ -11,6 +11,9 @@ library(magrittr)
 library(tools)
 library(wesanderson)
 library(extrafont)
+library(diffEnrich)
+library(UpSetR)
+
 # Correlations with significance levels
 # library(Hmisc)
 setwd("~/Documents/gitlab/Omics_Integration/DataRaw/hiv_infected_un/")
@@ -21,7 +24,8 @@ getwd()
 save_lzw <- function(title){
   ggsave(filename =  paste0( title, ".tiff"), device = NULL,
          path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
-         dpi = 300, compression = "lzw")
+         dpi = 300, compression = "lzw", 
+         width = 10, height = 8, units = "in")
   
 }
 
@@ -326,7 +330,7 @@ contour_prev_RA <- function(taxa_level, prev_vector, RA_vector){
 
 ## heatmap of features based on correlation 
 
-cor_heatmap <- function(df, method, reorder, hclust_method, text_size){
+cor_heatmap <- function(df, method, reorder, hclust_method, text_size, title){
   print("Use pairwise.complete.obs, and methods from pearson, kendall, spearman")
   cormat = cor(df, use = "pairwise.complete.obs", method = method)
   ###### Reordered correlation data visualization #####
@@ -353,10 +357,10 @@ cor_heatmap <- function(df, method, reorder, hclust_method, text_size){
   melted_cormat = melt(upper_tri, na.rm = TRUE)
   # Create a ggheatmap
   ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
-    geom_tile(color = "white")+
+    geom_tile(color = "white", size = 0.25) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                          midpoint = 0, limit = c(-1,1), space = "Lab", 
-                         name= method) +
+                         name= "Pearson's r") +
     theme_minimal()+ # minimal theme
     theme(axis.text.x = element_text(angle = 45, vjust = 1, 
                                      size = 16, hjust = 1),
@@ -372,17 +376,26 @@ cor_heatmap <- function(df, method, reorder, hclust_method, text_size){
       legend.justification = c(1, 0),
       legend.position = c(0.5, 0.8),
       legend.direction = "horizontal")+
-    guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+    guides(fill = guide_colorbar(barwidth = 10, barheight = 1,
                                  title.position = "top", title.hjust = 0.5)) +
+    ######## legend / color bar title ###########
     theme(axis.text.x = element_text(size = 16),
-          axis.text.y = element_text(size = 16))
+          axis.text.y = element_text(size = 16),
+          legend.text = element_text(size=15),
+                legend.title = element_text(size=15),
+                text=element_text(family="Arial")  )
   # Print the heatmap
   print(ggheatmap)
+  ggsave(filename =  paste0( title, ".tiff"), device = NULL,
+         path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
+         dpi = 300, compression = "lzw")
   return(cormat)
 }
 
-# clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3)
-# clin_pearson <- cor_heatmap(res, "pearson", TRUE, "complete", text_size = 3)
+###### 9_12_Global_rna_integration.Rmd ########33
+# clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3, title)
+# clin_pearson <- cor_heatmap(res, "pearson", TRUE, "complete", text_size = 3, title)
+# clin
 
 density_values_ind <- function(data, title){
   print("A column called group and a column called values")
@@ -434,13 +447,13 @@ optimize_contour <- function(CVDir, l1_max, l2_max){
   )
   
   a = list(
-    title = paste("L1", "(s1 = 0.7",  "s2 = 0.9", ")",sep = " "),
+    title = paste("L1 (Transcriptome)", "(s1 = 0.7",  "s2 = 0.9", ")",sep = " "),
     titlefont = f1,
     showticklabels = TRUE,
     tickfont = f2
   )
   b = list(
-    title = "L2",
+    title = "L2 (Microbiome)",
     titlefont = f1,
     showticklabels = TRUE,
     tickfont = f2
@@ -461,3 +474,102 @@ optimize_contour <- function(CVDir, l1_max, l2_max){
   export(contourPlot, paste0( CVDir, "refined_L1L2.png"))
   
 }
+
+################# test run upset plot ################
+######## upset plot ############
+df = read.xlsx( paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+                  "all_0.1_nodes_genes.xlsx"))
+# example of list input (list of named vectors)
+listInput <- list( `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
+                   `Two Omics (Genus 20%)` = df$TwoOmics_genus_20 %>% na.omit(),
+                   `HIV Status (Genus 20%)` = df$HIV_genus_20 %>% na.omit(),
+                   `LPS (Genus 20%)` = df$LPS_genus_20 %>% na.omit(),
+                   `LTA (Genus 20%)` = df$LTA_genus_20 %>% na.omit())
+## tiff(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+##            "genes_0.1_nodes_overlapping.tiff"), res = 300)
+upset(fromList(listInput), 
+      order.by = c("freq", "degree" ), 
+      #  keep.order = TRUE,
+          point.size = 2,
+          line.size = 2,
+          text.scale = 2) 
+
+
+# example of list input (list of named vectors)
+listInput <- list( `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
+                   `sCD14 (Family 20%)` = df$sCD14_family_20 %>% na.omit())
+## tiff(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+##            "genes_0.1_nodes_overlapping.tiff"), res = 300)
+upset(fromList(listInput), 
+      order.by = c("freq", "degree" ), 
+      #  keep.order = TRUE,
+      point.size = 2,
+      line.size = 2,
+      text.scale = 2) 
+
+# example of list input (list of named vectors)
+listInput <- list( `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
+                   `sCD14 (Genus 40% Module 1)` = df$sCD14_genus_40_1 %>% na.omit(), 
+                   `sCD14 (Genus 40% Module 2)` = df$sCD14_genus_40_2 %>% na.omit(),
+                   `sCD14 (Genus 60% Module 2)` = df$sCD14_genus_60_2 %>% na.omit(), 
+                   `sCD14 (Genus 60% Module 3)` = df$sCD14_genus_60_3 %>% na.omit()) 
+## tiff(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+##            "genes_0.1_nodes_overlapping.tiff"), res = 300)
+upset(fromList(listInput), 
+      order.by = c("freq", "degree" ), 
+      #  keep.order = TRUE,
+      point.size = 2,
+      line.size = 2,
+      text.scale = 2) 
+
+
+
+## dev.off()
+## ggsave(filename = paste0( "genes_0.1_nodes_overlapping.tiff"),device = NULL,
+##       path = "~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/" , dpi = 300, compression = "lzw", 
+##       width = 10, height = 8, units = "in" )
+
+df = read.xlsx( paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+                       "all_0.1_nodes_taxa.xlsx"))
+# example of list input (list of named vectors)
+listInput <- list( `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
+                   `Two Omics (Genus 20%)` = df$TwoOmics_genus_20 %>% na.omit(),
+                   `HIV Status (Genus 20%)` = df$HIV_genus_20 %>% na.omit(),
+                   `LPS (Genus 20%)` = df$LPS_genus_20 %>% na.omit(),
+                   `LTA (Genus 20%)` = df$LTA_genus_20 %>% na.omit() )
+upset(fromList(listInput), 
+      order.by = c("freq", "degree" ), 
+     #  keep.order = TRUE,
+          point.size = 2,
+          line.size = 2,
+          text.scale = 2) 
+
+
+# example of list input (list of named vectors)
+listInput <- list( `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
+                   `sCD14 (Family 20%)` = df$sCD14_family_20 %>% na.omit())
+## tiff(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+##            "genes_0.1_nodes_overlapping.tiff"), res = 300)
+upset(fromList(listInput), 
+      order.by = c("freq", "degree" ), 
+      #  keep.order = TRUE,
+      point.size = 2,
+      line.size = 2,
+      text.scale = 2) 
+
+
+# example of list input (list of named vectors)
+listInput <- list( `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
+                   `sCD14 (Genus 40% Module 1)` = df$sCD14_genus_40_1 %>% na.omit(), 
+                   `sCD14 (Genus 40% Module 2)` = df$sCD14_genus_40_2 %>% na.omit(),
+                   `sCD14 (Genus 60% Module 2)` = df$sCD14_genus_60_2 %>% na.omit(), 
+                   `sCD14 (Genus 60% Module 3)` = df$sCD14_genus_60_3 %>% na.omit()) 
+## tiff(paste0("~/Documents/gitlab/Omics_Integration/DataProcessed/side_by_side_comparison/",
+##            "genes_0.1_nodes_overlapping.tiff"), res = 300)
+upset(fromList(listInput), 
+      order.by = c("freq", "degree" ), 
+      #  keep.order = TRUE,
+      point.size = 2,
+      line.size = 2,
+      text.scale = 2) 
+
