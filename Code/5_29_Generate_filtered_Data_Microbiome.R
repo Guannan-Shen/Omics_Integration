@@ -118,7 +118,7 @@ load_filtered_micro_level_samples <- function(level, prevalence, RA, wd, collaps
     res = data_ra  %>% dplyr::mutate(Taxas = taxa,
                                      Prevalence = non_zero,
                                      Avg_RA = avg_ra)  %>% 
-      arrange( desc(Prevalence), desc(Avg_RA)) %>% 
+      plyr::arrange( plyr::desc(Prevalence), plyr::desc(Avg_RA)) %>% 
       dplyr::mutate(Num = 1:nrow(.)) %>% 
       dplyr::select(Num, Taxas, Prevalence, Avg_RA, everything())
     return(res)
@@ -475,7 +475,7 @@ load_filtered_micro_level <- function(level, prevalence, RA, wd){
     res = data_ra  %>% dplyr::mutate(Taxas = taxa,
                                      Prevalence = non_zero,
                                      Avg_RA = avg_ra)  %>% 
-      arrange( desc(Prevalence), desc(Avg_RA)) %>% 
+      plyr::arrange( plyr::desc(Prevalence), plyr::desc(Avg_RA)) %>% 
       dplyr::mutate(Num = 1:nrow(.)) %>% 
       dplyr::select(Num, Taxas, Prevalence, Avg_RA, everything())
     return(res)
