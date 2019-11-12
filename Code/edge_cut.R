@@ -386,23 +386,27 @@ make_cytoscape <- function(abar, modules, X1, X2, edge_cut, title, collection, n
   #  tidy the nodes and edges data 
   df_cyto <- tidy_wgcna_cyto(node_edge, 
                              x1_name = rna_names, x2_name = micro_names)
+  ### save ranked edges #########
+  ranked_edge <- df_cyto$edges %>% as.data.frame() %>% plyr::arrange(plyr::desc(abs_weight))
+  
+  across_edge <- df_cyto$edges %>% as.data.frame() %>% 
+    dplyr::filter(interaction == "Across" )   %>% 
+    plyr::arrange(plyr::desc(abs_weight))
+  #### save #######
+  write.xlsx(df_cyto$nodes %>% plyr::arrange(group, id), 
+             file = paste0(dir, n_strong_modules, edge_cut, "nodes.xlsx"))
+  write.xlsx(df_cyto$edges, file = paste0(dir, n_strong_modules, edge_cut, "edges.xlsx"))
+  write.xlsx(ranked_edge, file = paste0(dir, n_strong_modules, edge_cut, "ranked_edges.xlsx"))
+  write.xlsx(across_edge, 
+             file = paste0(dir, n_strong_modules, edge_cut, "across_inter_edges.xlsx"))
   ## export to cytoscape
   createNetworkFromDataFrames(df_cyto$nodes, df_cyto$edges, 
                               title= title, collection= collection)
   
-  ### save ranked edges #########
-  ranked_edge <- df_cyto$edges %>% as.data.frame() %>% plyr::arrange(plyr::desc(abs_weight))
   
-  across_edge <- df_cyto$edges %>% as.data.frame() %>% dplyr::filter(interaction == "Across" )   %>% 
-    plyr::arrange(plyr::desc(abs_weight))
-  #### save #######
-  write.xlsx(df_cyto$nodes %>% plyr::arrange(group, id), file = paste0(dir, n_strong_modules, edge_cut, "nodes.xlsx"))
-  write.xlsx(df_cyto$edges, file = paste0(dir, n_strong_modules, edge_cut, "edges.xlsx"))
-  write.xlsx(ranked_edge, file = paste0(dir, n_strong_modules, edge_cut, "ranked_edges.xlsx"))
-  write.xlsx(across_edge, file = paste0(dir, n_strong_modules, edge_cut, "across_inter_edges.xlsx"))
 }
 ############# comparing nodes #############
-nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
+nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2, diff){
   message("X1 must be transcriptome!")
   # number of feature
   p1 <-  ncol(X1)
@@ -427,7 +431,7 @@ nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
   mat1[2,2] = p1 - nrow(df)
   df = merge(df1,y = df2,by="id") %>% plyr::arrange(id)
   write.xlsx(df %>% plyr::arrange(id), 
-             file = paste0(dir2, title2, title1, "overlapping_genes.xlsx"),
+             file = paste0(dir2, title2, diff, "overlapping_genes.xlsx"),
              row.names = TRUE  )
   
   mat1[1,1] = nrow(df)
@@ -442,7 +446,7 @@ nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
   mat2[2,2] = p2 - nrow(df)
   
   df = merge(df1,y = df2,by="id") %>% plyr::arrange(id)
-  write.xlsx(df , file = paste0(dir2, title2, title1, "overlapping_taxa.xlsx"),
+  write.xlsx(df , file = paste0(dir2, title2, diff, "overlapping_taxa.xlsx"),
              row.names = TRUE  )
   mat2[1,1] = nrow(df)
   mat2[2,1] = nrow(df1)  - nrow(df)
@@ -453,7 +457,7 @@ nodes_two_by_two <- function(dir1, dir2, X1, X2, title1, title2){
   df = merge(data_a,y = data_b,by="id",all=TRUE)
   mat3[2,2] = p - nrow(df)
   df = merge(data_a,y = data_b,by="id") %>% plyr::arrange(group.x , id)
-  write.xlsx(df, file = paste0(dir2, title2, title1, "overlapping_all.xlsx"),
+  write.xlsx(df, file = paste0(dir2, title2, diff, "overlapping_all.xlsx"),
              row.names = TRUE  )
   mat3[1,1] = nrow(df)
   mat3[2,1] = nrow(data_a)  - nrow(df)
