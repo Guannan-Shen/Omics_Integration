@@ -165,6 +165,7 @@ corr_modules(modules_cor, modules_cor$ind, modules_cor$values,  "", "Correlation
 ######### PC1 association, cor.test with CD14 ##
 ## original ones 
 pc1_modules <- do.call(  "cbind", get_pc1_listfeature(fea_list))
+
 ## trimmed ones (PC1s)
 mat <- matrix(NA, nrow(fea_list[[1]]), length(edges))
 for (i in 1: length(edges)){
@@ -173,9 +174,20 @@ for (i in 1: length(edges)){
 ## combind all PC1s 
 pc1_cor <- cbind(pc1_modules, mat)
 dim(pc1_cor)
-colnames(pc1_cor) <- c(paste("Module", 0:n_networks), paste("Trimmed Module", edges) )
+colnames(pc1_cor) <- c(paste("Module", 0:n_networks), paste(edges, "Trimmed Module" ) )
 
-cor_test_df(pc1_cor, CD14[,1]) %>% round(., 3)%>% kable 
+cor_test_df(pc1_cor, CD14[,1]) %>% round(., 3) %>% kable 
+df <- cor_test_df(pc1_cor, CD14[,1]) %>% round(., 3) %>% as.data.frame()
+df
+df1 <- melt(df[1,], na.rm = TRUE)
+df1
+df2 <- melt(df[2,], na.rm = TRUE)
+# ggplot(df1, aes("Pearson's r", variable, fill = -log10(value)))+
+#     geom_tile(color = "white") +
+#     scale_fill_gradient(low = "white", high = "red",  space = "Lab", 
+#                          name= "-log10(p value)") +
+#     theme_minimal()
+
 
 ```
 
