@@ -23,3 +23,6 @@ getwd()
 ############ tidy the differential HIV untreated datasets #########
 df <- read.csv("res.edger.csv") %>% dplyr::select(Gene_ID, Symbol, everything())
 write.xlsx(df, "HIV_Untreated_DE_results.xlsx")
+
+############# read in nodes of the most concise networks ##########
+
