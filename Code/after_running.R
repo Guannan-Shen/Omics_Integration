@@ -44,6 +44,30 @@ CVDir <- "CD14_Unclassified_Genus_Global_100_50_20_1_3_4foldCV/"
 dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
 load(paste0(dir, "SmCCNetWeights.RData"))
 
+
+
+abar_hclust <- function(abar, xlim1, xlim2){
+  message("Dimensions: ", dim(abar))
+  message("Complete Linkage")
+  cormat = abar
+  hclust_method = "complete"
+  dd2 <- as.dist((1-cormat)/2)
+  # default settings of hierarchical clustering ##
+  hc <- hclust(dd, method = hclust_method)
+  hcd <- as.dendrogram(hc)
+  ## plot all #####
+  plot(hcd)
+  #### replace leaflab with dots #####
+  nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
+                  cex = 0.8, col = "brown1")
+  ## plot a portion
+  plot(hcd, xlim = c(xlim1, xlim2), type = "rectangle", 
+       ylab = "Height", leaflab = "none", nodePar = nodePar,
+       cex.lab=1.5, cex.axis=1.5)
+}
+abar_hclust(abar, 1605, 1685)
+
+
 ###### edge cut and through this, find the best (strongest) sub-networks ########3
 edges_i <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5)
 dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
@@ -132,7 +156,7 @@ make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]),
                edge_cut = 0.1, title = "New Two Omics cut 0.1", collection="sCD14", 4)
 make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                X2 = mibi[, mibi_outlier],
-               edge_cut = 0.3, title = "New Two Omics cut 0.3", collection="sCD14")
+               edge_cut = 0.3, title = "New Two Omics cut 0.3", collection="sCD14", 4)
 
 ##############6  nodes overlapping ###############
 ## check X1 X2
@@ -439,7 +463,7 @@ cytoscapeVersionInfo ()
 ## 5
 make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                X2 = mibi[, mibi_outlier],
-               edge_cut = 0.1, title = "New LTA cut 0.1 Module 1", collection="sCD14", 
+               edge_cut = 0.2, title = "New LTA cut 0.2 Module 1", collection="sCD14", 
                n_strong_modules = 1)
 
 
