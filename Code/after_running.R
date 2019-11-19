@@ -45,27 +45,22 @@ dir <- paste0( "~/Documents/gitlab/Omics_Integration/DataProcessed/", CVDir)
 load(paste0(dir, "SmCCNetWeights.RData"))
 
 
+###33 get the part of hierarchical clustering ######
+abar_hclust(abar = abar, 1605, 1685)
 
-abar_hclust <- function(abar, xlim1, xlim2){
-  message("Dimensions: ", dim(abar))
-  message("Complete Linkage")
-  cormat = abar
-  hclust_method = "complete"
-  dd2 <- as.dist((1-cormat)/2)
-  # default settings of hierarchical clustering ##
-  hc <- hclust(dd, method = hclust_method)
-  hcd <- as.dendrogram(hc)
-  ## plot all #####
-  plot(hcd)
-  #### replace leaflab with dots #####
-  nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
-                  cex = 0.8, col = "brown1")
-  ## plot a portion
-  plot(hcd, xlim = c(xlim1, xlim2), type = "rectangle", 
-       ylab = "Height", leaflab = "none", nodePar = nodePar,
-       cex.lab=1.5, cex.axis=1.5)
-}
-abar_hclust(abar, 1605, 1685)
+##### similarity in abar from 0 to 1 ########
+min(abar)
+heatmap_abar_cormat(cormat = as.matrix(abar)[1610:1680, 1610:1680], 
+                    TRUE, "complete", "sCD14_Genus_20_1_n2" )
+
+bbar <- as.matrix(abar)*100
+bbar[bbar >= 1] <- bbar[bbar >= 1]/70
+bbar[bbar >= 1] <- 0.5
+heatmap_abar_cormat(cormat = bbar[1600:1780, 1600:1780], 
+                    TRUE, "complete", "sCD14_Genus_20_1_test" )
+
+heatmap_abar_cormat(cormat = bbar, 
+                    TRUE, "complete", "sCD14_Genus_20_1_testall" )
 
 
 ###### edge cut and through this, find the best (strongest) sub-networks ########3
