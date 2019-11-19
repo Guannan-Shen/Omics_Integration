@@ -352,9 +352,10 @@ cor_heatmap <- function(df, method, reorder, hclust_method, text_size, title){
     return(cormat)
   }
   upper_tri = get_upper_tri(cormat)
-  
-  # reshape data 
+  # reshape data
   melted_cormat = melt(upper_tri, na.rm = TRUE)
+  
+  # melted_cormat = melt(cormat, na.rm = TRUE)
   # Create a ggheatmap
   ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
     geom_tile(color = "white", size = 0.25) +
@@ -391,6 +392,105 @@ cor_heatmap <- function(df, method, reorder, hclust_method, text_size, title){
          dpi = 300, compression = "lzw")
   return(cormat)
 }
+
+############## begin from the abar the heatmap ##########
+######### get the part of hierarchical clustering ####33
+abar_hclust <- function(abar, xlim1, xlim2){
+  message("Dimensions: ", dim(abar))
+  message("Complete Linkage")
+  cormat = abar
+  hclust_method = "complete"
+  dd2 <- as.dist((1-cormat)/2)
+  # default settings of hierarchical clustering ##
+  hc <- hclust(dd, method = hclust_method)
+  hcd <- as.dendrogram(hc)
+  ## plot all #####
+  plot(hcd)
+  #### replace leaflab with dots #####
+  nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
+                  cex = 0.8, col = "brown1")
+  ## plot a portion
+  plot(hcd, xlim = c(xlim1, xlim2), type = "rectangle", 
+       ylab = "Height", leaflab = "none", nodePar = nodePar,
+       cex.lab=1.5, cex.axis=1.5)
+}
+
+## "complete" #########
+heatmap_abar_cormat <- function(cormat, reorder, hclust_method, title ){
+  library(reshape2)
+  # using correlation as dist
+  reorder_cormat <- function(cormat){
+    # Use correlation between variables as distance
+    dd <- as.dist((1-cormat))
+    # default settings of 
+    hc <- hclust(dd, method = hclust_method)
+    cormat <-cormat[hc$order, hc$order]
+  }
+  if(reorder){
+    cormat <- reorder_cormat(cormat)
+  }else{}
+  
+  # Get upper triangle of the correlation matrix
+  # get_upper_tri <- function(cormat){
+  #   cormat[lower.tri(cormat)] = NA
+  #   return(cormat)
+  # }
+  # upper_tri = get_upper_tri(cormat)
+  
+  # reshape data 
+  # melted_cormat = melt(upper_tri, na.rm = TRUE)
+  
+  melted_cormat = melt(cormat, na.rm = TRUE)
+  # Create a ggheatmap
+  ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, 
+                                         fill = value
+                                         # , color = value
+                                         ))+
+    geom_tile( size = 0.05
+               , color = "white"
+               ) +
+    scale_colour_continuous(guide = FALSE) +
+    # scale_fill_gradient(low = "white", high = "red", 
+    #                      limit = c(0,1), space = "Lab", 
+    #                      name= "Similarity") +
+    scale_fill_gradient2(low = "white", high = "black",
+                        mid = "red3",
+                        midpoint = 0.48,
+                        limit = c(0,1), space = "Lab",
+                         name= "Similarity") +
+    theme_minimal()+ # minimal theme
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                     size = 16, hjust = 1),
+          axis.text.y = element_text(size = 16))+
+    coord_fixed() +
+    labs(x = "", y = "") + 
+    # geom_text(aes(Var2, Var1, label = round(value,2) ), color = "black", size = text_size)  +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.border = element_blank(),
+      panel.background = element_blank(),
+      axis.ticks = element_blank(),
+      legend.justification = c(0.5, 0),
+      legend.position="top",
+      legend.direction = "horizontal")+
+    guides(fill = guide_colorbar(barwidth = 10, barheight = 1,
+                                 title.position = "top", title.hjust = 0.5)) +
+    ######## legend / color bar title ###########
+  theme( axis.text.x = element_blank(),
+         axis.ticks.x = element_blank(),
+         axis.text.y = element_blank(),
+         axis.ticks.y = element_blank(),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        text=element_text(family="Arial")  )
+  # Print the heatmap
+  print(ggheatmap)
+  ggsave(filename =  paste0( title, ".tiff"), device = NULL,
+         path = "~/Documents/gitlab/Omics_Integration/DataProcessed/plots/non_collapse/",
+         dpi = 300, compression = "lzw")
+  return(cormat)
+}
+
 
 ###### 9_12_Global_rna_integration.Rmd ########33
 # clin_pearson <- cor_heatmap(df, "pearson", TRUE, "complete", text_size = 3, title)
