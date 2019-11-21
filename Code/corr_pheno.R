@@ -208,7 +208,7 @@ residual_df <- function(df, adjustfor){
   }
 
 ############## summary #############
-corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir, edges){
+corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir, edges, Y_name){
   print("Please load the abar, modules and Ws first, this one needs the Y!")
   print(run)
   print("Check the dimension of microbiome dataset: ")
@@ -256,8 +256,34 @@ corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir,
     trimmed_Pearson[[i]] <- corr_list_module(tmp2, Y, 1:n_networks, 
                                              modulelabel = paste(edge_cut, "trimmed module"))
   }
+  ########## focus on edge 0.1#########
+  message("cor.test of 0.1 edge cut nodes!")
+  n = which(edges %in% 0.1)
+  features_01 = features_cut[[n]][lapply(features_cut[[n ]],ncol)>0]
+  if( (max( Y[,1], na.rm = TRUE) == 1) &  
+          (min( Y[,1], na.rm = TRUE) == 0)){
+    
+    ######### see pca_getPC1.R #########
+    
+  } else{
+    for (i in length(features_01)) {
+      features_01_tmp = features_01[[i]] %>% as.data.frame()
+      tmp_cor = cor_test_df(features_01_tmp, Y[,1]) %>% round(., 4) %>% as.data.frame() %>% 
+        t() %>% as.data.frame() 
+      id = sim_micro_names(rownames(tmp_cor)) 
+      final01_cor <-  tmp_cor  %>% dplyr::mutate(`FDR (correlation)` = 
+                                                   round( p.adjust(pvalue, method = "BH"), 4),
+                                                 id = id) %>%
+        plyr::arrange(pvalue) %>% dplyr::rename(`p (correlation)` = pvalue) %>%
+                              dplyr::select(id, `FDR (correlation)`, everything() )
+      rownames(final01_cor) <- id
+      write.xlsx( final01_cor, 
+                  file = paste0(dir, run, "01nodes_against_Pheno.xlsx"))
+    }
+    
+  }
   
-  ###### combine all trimmed correlation 
+    ###### combine all trimmed correlation 
   trimmed_Pearson_all <- do.call("rbind", trimmed_Pearson)
   modules_cor <- rbind(modules_Pearson, trimmed_Pearson_all)
   ########## the plot ###############
@@ -269,14 +295,32 @@ corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir,
   
   
   n_modules <- length(n_strong_modules)
-  
-  
   ## trimmed ones (PC1s)
   mat <- matrix(NA, nrow( fea_list[[n_strong_modules[1]]]), 
                 length(edges)*n_modules ) 
   for (i in 1: length(edges)){
     mat[ , (i*n_modules + 1 - n_modules) :( i*n_modules )  ] <- 
       get_pc1_listfeature(features_cut[[i]]) %>% unlist
+    
+  }
+  if (n_modules == 1){
+    message("Plot PC1 against phenotype")
+    df_trend = data.frame(PC1 = mat[,1], Y = Y[,1])
+    p = ggplot(data = df_trend, aes(x = Y, y = PC1)) +
+      geom_point()+
+      geom_smooth(method=lm, se=FALSE, color="black") +
+      theme_bw() +
+      labs( x = Y_name , y = "PC1 (features at 0.1 edge cut)") +
+      theme(axis.text.x = element_text(size = 16),
+            axis.text.y = element_text(size = 16),
+            axis.title.x = element_text(size = 18),
+            axis.title.y = element_text(size = 18),
+            text=element_text(family="Arial"))
+    print(p)
+    ggsave(filename = paste0(run, "PC1_against_pheno.tiff"),device = NULL,
+           path = dir, dpi = 300, compression = "lzw" )
+    
+  }else if (n_modules == 2){
     
   }
   
