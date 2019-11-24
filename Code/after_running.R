@@ -82,10 +82,13 @@ robust_module(abar, modules, X1 = (filtered_rlog[, filtered_outlier]),
 ## get the correlation against the phenotype and PC1 against the phenotype ########
 n_strong_modules <- 5
 edges <- c(0.1, 0.2, 0.3, 0.4)
-corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
-              X2 = mibi[, mibi_outlier], Y = CD14, 
+corr_against_Y(abar, modules, 
+               X1 = (filtered_rlog[, filtered_outlier]), 
+              X2 = mibi[, mibi_outlier], 
+              Y = CD14, 
               run = "Genus_20_1_sCD14" ,
-              n_strong_modules , dir, edges)
+              n_strong_modules , dir, edges,
+              Y_name = "sCD14 Levels")
 ####### from here focus on non-zero modules #########
 ##### enrichment analysis #############
 ######33 One large figure and enrichr kegg, gene list #####
@@ -338,7 +341,7 @@ edges <- c(0.1, 0.2)
 corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                X2 = mibi[, mibi_outlier], Y = Y, 
                run = run ,
-               n_strong_modules , dir, edges)
+               n_strong_modules , dir, edges, Y_name = "LPS Levels")
 ## 4
 robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                            X2 = mibi[, mibi_outlier],Y = Y, 
@@ -445,7 +448,7 @@ edges <- c(0.1, 0.2, 0.3)
 corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                X2 = mibi[, mibi_outlier], Y = Y, 
                run = run ,
-               n_strong_modules , dir, edges)
+               n_strong_modules , dir, edges, Y_name = "LTA Levels")
 ## 4
 robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                            X2 = mibi[, mibi_outlier],Y = Y, 
