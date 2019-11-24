@@ -393,7 +393,7 @@ CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier],
 
 #################### diff cutoffs ###############3
 prev <- 60
-ra <- 1
+ra <- 1.1
 #################################################
 
 # omcis_name <- "30_2_Global_100_50_Genus"
