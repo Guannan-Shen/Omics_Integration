@@ -44,6 +44,8 @@ check_standardize(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier],
 CVDir <- get_CVDir(Y = CD14, K = 4, CCcoef = NULL, 
                    Omics_name = "Unclassified_Genus_Global_100_50_40_2", ntrys = 3)
 
+######## the L1 L2 contour plot will be saved to CVDir #########
+# CVDir was used as a global enviroment virable in this funcition 
 CV_lambda(filtered_rlog[, filtered_outlier], mibi[, mibi_outlier], 
           data.frame(CD14), 
           K = 4,
