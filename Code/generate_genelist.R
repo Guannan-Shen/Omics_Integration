@@ -76,7 +76,8 @@ get_tmm <- function(){
   return(list(df = df, sym = gene_ID_Sym))
 }
 
-# #variance
+# #variance.
+
 # var_tmm <- get_tmm()$df %>% apply(., 2, var) %>% as.data.frame()
 # colnames(var_tmm) <- "values"
 # var_tmm <- var_tmm %>% filter(values < 200)
