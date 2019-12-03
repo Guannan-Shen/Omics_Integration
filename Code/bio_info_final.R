@@ -38,13 +38,13 @@ lapping_lists <- vector('list', 4)
 
 lapping_lists[[1]] <- list( 
              `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
-              `Two Omics (NULL) (Genus 20%)` = df$TwoOmics_genus_20 %>% na.omit(),
-              `HIV Status (Genus 20%)` = df$HIV_genus_20 %>% na.omit())
+              `Two-omics (NULL)` = df$TwoOmics_genus_20 %>% na.omit(),
+              `HIV Status` = df$HIV_genus_20 %>% na.omit())
 
 lapping_lists[[2]] <- list( 
               `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
-              `LPS (Genus 20%)` = df$LPS_genus_20 %>% na.omit(),
-              `LTA (Genus 20%)` = df$LTA_genus_20 %>% na.omit() )
+              `LPS` = df$LPS_genus_20 %>% na.omit(),
+              `LTA` = df$LTA_genus_20 %>% na.omit() )
 
 lapping_lists[[3]] <- list( 
       `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
@@ -62,33 +62,57 @@ lapping_lists[[4]] <- list(
 
 
 ##### genes overlapping of sCD14 HIV null ####
+# Prepare a palette of 3 colors with R colorbrewer:
+library(RColorBrewer)
+
+myCol <- brewer.pal(3, "Pastel2")
+myCol [1:2]
+
 set.seed(1) # For reproducibility of results
 venn.diagram(lapping_lists[[1]], 
              filename =paste0("plots/non_collapse/", name ,"1.tiff"), 
-             resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,3), cex= rep(3,1), cat.cex= rep(2,1),
+             resolution = 300, compression = "lzw",  imagetype = "tiff", lwd	= rep(4,3), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol,
+             fontface = "bold",
              cat.pos = c(180, 180, 0), 
              cat.just = list(c(0.5,-2), c(0.5,-2), c(0.5,1)) )
 
 venn.diagram(lapping_lists[[2]], 
              filename =paste0("plots/non_collapse/", name ,"2.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,3), cex= rep(3,1), cat.cex= rep(2,1),
+             lwd	= rep(4,3), cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol,
+             fontface = "bold",
              cat.pos = c(180, 180, 0), 
-             cat.just = list(c(0.5,-1.5), c(0.5,-1.5), c(0.5,1)) )
+             cat.just = list(c(0.5,-0.7), c(0.5,-0.7), c(0.5,0.7)) )
 
 venn.diagram(lapping_lists[[3]], 
              filename =paste0("plots/non_collapse/", name ,"3.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,2), cex= rep(3,1), cat.cex= rep(2,1),
+             lwd	= rep(4,2), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol[1:2],
+             fontface = "bold",
              cat.pos = c(0, 0), 
-             cat.just = list(c(0.5,-1),  c(0.5, -1)) )
+             cat.just = list(c(0.5,-0.5),  c(0.5, -0.5)) )
 
 venn.diagram(lapping_lists[[4]], 
              filename =paste0("plots/non_collapse/", name ,"4.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,3), cex= rep(3,1), cat.cex= rep(2,1),
-             cat.pos = c(0, 0, 180), 
+             lwd	= rep(4,3), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol,
+             fontface = "bold",
+             cat.pos = c(-10, 10, 180), 
              cat.just = list(c(0.6, 2), c(0.4, 2), c(0.5,0)) )
 
 ### Taxa ######
@@ -98,13 +122,13 @@ name = "taxa"
 
 lapping_lists[[1]] <- list( 
   `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
-  `Two Omics (NULL) (Genus 20%)` = df$TwoOmics_genus_20 %>% na.omit(),
-  `HIV Status (Genus 20%)` = df$HIV_genus_20 %>% na.omit())
+  `Two-omics (NULL)` = df$TwoOmics_genus_20 %>% na.omit(),
+  `HIV Status` = df$HIV_genus_20 %>% na.omit())
 
 lapping_lists[[2]] <- list( 
   `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
-  `LPS (Genus 20%)` = df$LPS_genus_20 %>% na.omit(),
-  `LTA (Genus 20%)` = df$LTA_genus_20 %>% na.omit() )
+  `LPS` = df$LPS_genus_20 %>% na.omit(),
+  `LTA` = df$LTA_genus_20 %>% na.omit() )
 
 lapping_lists[[3]] <- list( 
   `sCD14 (Genus 20%)` = df$sCD14_genus_20 %>% na.omit(), 
@@ -126,29 +150,49 @@ set.seed(1) # For reproducibility of results
 venn.diagram(lapping_lists[[1]], 
              filename =paste0("plots/non_collapse/", name ,"1.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,3), cex= rep(3,1), cat.cex= rep(2,1),
+             lwd	= rep(4,3), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol,
+             fontface = "bold",
              cat.pos = c(180, 180, 0), 
              cat.just = list(c(0.5,0), c(0.5,0), c(0.5,1.4)) )
 
 venn.diagram(lapping_lists[[2]], 
              filename =paste0("plots/non_collapse/", name ,"2.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,3), cex= rep(3,1), cat.cex= rep(2,1),
+             lwd	= rep(4,3), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol,
+             fontface = "bold",
              cat.pos = c(180, 180, 0), 
              cat.just = list(c(0.5, -0.3), c(0.5,1.5), c(0.5,1)) )
 
 venn.diagram(lapping_lists[[3]], 
              filename =paste0("plots/non_collapse/", name ,"3.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,2), cex= rep(3,1), cat.cex= rep(2,1),
-             cat.pos = c(0, 0), 
-             cat.just = list(c(0.5,-1),  c(0.5, -1)) )
+             lwd	= rep(4,2), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol[1:2],
+             fontface = "bold",
+             cat.pos = c(-5, 10), 
+             cat.just = list(c(0.5, 0.5),  c(0.5, 0.5)) )
 
 venn.diagram(lapping_lists[[4]], 
              filename =paste0("plots/non_collapse/", name ,"4.tiff"), 
              resolution = 300, compression = "lzw",  imagetype = "tiff",
-             lwd	= rep(4,3), cex= rep(3,1), cat.cex= rep(2,1),
-             cat.pos = c(0, 0, 180), 
+             lwd	= rep(4,3), 
+             cex= 4, 
+             cat.cex= 3,
+             lty = 'blank',
+             fill = myCol,
+             fontface = "bold",
+             cat.pos = c(-10, 10, 180), 
              cat.just = list(c(0.6, 1), c(0.4, 1), c(0.5,1)) )
 #### genus vs family ##
 fisher.test(matrix(c(5,6,12,47), nrow = 2))
