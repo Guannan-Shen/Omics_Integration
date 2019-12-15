@@ -402,7 +402,7 @@ abar_hclust <- function(abar, xlim1, xlim2){
   hclust_method = "complete"
   dd2 <- as.dist((1-cormat)/2)
   # default settings of hierarchical clustering ##
-  hc <- hclust(dd, method = hclust_method)
+  hc <- hclust(dd2, method = hclust_method)
   hcd <- as.dendrogram(hc)
   ## plot all #####
   plot(hcd)
