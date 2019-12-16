@@ -46,21 +46,27 @@ load(paste0(dir, "SmCCNetWeights.RData"))
 
 
 ###33 get the part of hierarchical clustering ######
-abar_hclust(abar = abar, 1605, 1685)
+abar_hclust(abar = abar, 290, 355)
+
+# dd2 <- as.dist((1-abar)/2)
+# # default settings of hierarchical clustering ##
+# hc <- hclust(dd2, method = "complete")
+# plot(hc)
 
 ##### similarity in abar from 0 to 1 ########
 min(abar)
-heatmap_abar_cormat(cormat = as.matrix(abar)[1610:1680, 1610:1680], 
-                    TRUE, "complete", "sCD14_Genus_20_1_n2" )
+heatmap_abar_cormat(cormat = as.matrix(abar)[290:355, 290:355], 
+                    TRUE, "complete", "sCD14_Genus_20_1_n2_new" )
 
-bbar <- as.matrix(abar)*100
-bbar[bbar >= 1] <- bbar[bbar >= 1]/70
-bbar[bbar >= 1] <- 0.5
-heatmap_abar_cormat(cormat = bbar[1600:1780, 1600:1780], 
-                    TRUE, "complete", "sCD14_Genus_20_1_test" )
-
-heatmap_abar_cormat(cormat = bbar, 
-                    TRUE, "complete", "sCD14_Genus_20_1_testall" )
+bbar <- as.matrix(abar)*10000
+bbar[bbar >= 1] <- bbar[bbar >= 1]/2000
+bbar[bbar >= 1] <- rnorm(sum(bbar >= 1), 0, 0.2)
+#bbar[bbar == 0] <- rnorm(sum(bbar == 0), 0, 0.2)
+heatmap_abar_cormat(cormat = bbar[270:365, 270:365], 
+                    TRUE, "complete", "sCD14_Genus_20_1_new" )
+abar_hclust(abar = bbar, 250, 300)
+# heatmap_abar_cormat(cormat = bbar, 
+#                     TRUE, "complete", "sCD14_Genus_20_1_testall" )
 
 
 ###### edge cut and through this, find the best (strongest) sub-networks ########3
