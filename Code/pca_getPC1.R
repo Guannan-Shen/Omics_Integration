@@ -62,41 +62,41 @@ wilcox_test_df <- function(df, y){
 
 library(extrafont)
 
-df_bar = data.frame(gene = mat[,1], 
-                    HIV = ifelse(HIV[,1] == 1, "HIV-1-infected", "Uninfected") )
-ggplot(data = df_bar, aes(x = HIV, y = gene, fill = HIV)) +
-  geom_boxplot(width=0.3) +
-  # grey scale plot
-  scale_fill_grey(start = 0.4, end = 0.8) +
-  theme_bw() +
-  theme(legend.position="bottom", legend.box = "horizontal") +
-  labs(fill = "HIV Status", x = "HIV Status", y = "PC1") +
-  theme(axis.text.x = element_text(size = 16),
-        axis.text.y = element_text(size = 16),
-        axis.title.x = element_text(size = 18),
-        axis.title.y = element_text(size = 18),
-        legend.text = element_text(size=16),
-        legend.title = element_text(size=16),
-        text=element_text(family="Arial"))
-
-ggsave(filename = paste0(run, "1PC1_bar.tiff"),device = NULL,
-       path = dir, dpi = 300, compression = "lzw" )
-
-df_bar = data.frame(gene = mat[,2], 
-                    HIV = ifelse(HIV[,1] == 1, "HIV-1-infected", "Uninfected") )
-ggplot(data = df_bar, aes(x = HIV, y = gene, fill = HIV)) +
-  geom_boxplot(width=0.3) +
-  # grey scale plot
-  scale_fill_grey(start = 0.4, end = 0.8) +
-  theme_bw() +
-  theme(legend.position="bottom", legend.box = "horizontal") +
-  labs(fill = "HIV Status", x = "HIV Status", y = "PC1") +
-  theme(axis.text.x = element_text(size = 16),
-        axis.text.y = element_text(size = 16),
-        axis.title.x = element_text(size = 18),
-        axis.title.y = element_text(size = 18),
-        legend.text = element_text(size=16),
-        legend.title = element_text(size=16),
-        text=element_text(family="Arial"))
-ggsave(filename = paste0(run, "3PC1_bar.tiff"),device = NULL,
-       path = dir, dpi = 300, compression = "lzw" )
+# df_bar = data.frame(gene = mat[,1], 
+#                     HIV = ifelse(HIV[,1] == 1, "HIV-1-infected", "Uninfected") )
+# ggplot(data = df_bar, aes(x = HIV, y = gene, fill = HIV)) +
+#   geom_boxplot(width=0.3) +
+#   # grey scale plot
+#   scale_fill_grey(start = 0.4, end = 0.8) +
+#   theme_bw() +
+#   theme(legend.position="bottom", legend.box = "horizontal") +
+#   labs(fill = "HIV Status", x = "HIV Status", y = "PC1") +
+#   theme(axis.text.x = element_text(size = 16),
+#         axis.text.y = element_text(size = 16),
+#         axis.title.x = element_text(size = 18),
+#         axis.title.y = element_text(size = 18),
+#         legend.text = element_text(size=16),
+#         legend.title = element_text(size=16),
+#         text=element_text(family="Arial"))
+# 
+# ggsave(filename = paste0(run, "1PC1_bar.tiff"),device = NULL,
+#        path = dir, dpi = 300, compression = "lzw" )
+# 
+# df_bar = data.frame(gene = mat[,2], 
+#                     HIV = ifelse(HIV[,1] == 1, "HIV-1-infected", "Uninfected") )
+# ggplot(data = df_bar, aes(x = HIV, y = gene, fill = HIV)) +
+#   geom_boxplot(width=0.3) +
+#   # grey scale plot
+#   scale_fill_grey(start = 0.4, end = 0.8) +
+#   theme_bw() +
+#   theme(legend.position="bottom", legend.box = "horizontal") +
+#   labs(fill = "HIV Status", x = "HIV Status", y = "PC1") +
+#   theme(axis.text.x = element_text(size = 16),
+#         axis.text.y = element_text(size = 16),
+#         axis.title.x = element_text(size = 18),
+#         axis.title.y = element_text(size = 18),
+#         legend.text = element_text(size=16),
+#         legend.title = element_text(size=16),
+#         text=element_text(family="Arial"))
+# ggsave(filename = paste0(run, "3PC1_bar.tiff"),device = NULL,
+#        path = dir, dpi = 300, compression = "lzw" )
