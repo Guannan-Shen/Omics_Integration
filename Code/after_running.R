@@ -111,7 +111,7 @@ cytoscapeVersionInfo ()
 ###### 0.4 has been done before ##########33
 make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                X2 = mibi[, mibi_outlier],
-               edge_cut = 0, title = "New Soluble CD14 cut 0", collection="sCD14", 5)
+               edge_cut = 0.4, title = "New Soluble CD14 cut 0.4", collection="sCD14", 5)
 
 
 ###### two Omics genus 20 1 #############
@@ -360,7 +360,7 @@ cytoscapeVersionInfo ()
 ## 5
 make_cytoscape(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                X2 = mibi[, mibi_outlier],
-               edge_cut = 0.2, title = "New LPS cut 0.1 Module 2", collection="sCD14", 
+               edge_cut = 0.11, title = "New LPS cut 0.11 Module 2", collection="sCD14", 
                n_strong_modules = 1)
 
 
