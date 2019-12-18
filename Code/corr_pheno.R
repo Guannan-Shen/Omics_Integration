@@ -212,7 +212,7 @@ corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir,
   print("Please load the abar, modules and Ws first, this one needs the Y!")
   print(run)
   print("Check the dimension of microbiome dataset: ")
-  mibi[, mibi_outlier] %>% ncol() %>% print()
+  X2 %>% ncol() %>% print()
   # number of feature
   p1 <-  ncol(X1)
   p2 <-  ncol(X2)
@@ -241,13 +241,16 @@ corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir,
   for (i in 1: length(edges)){
     edge_cut <- edges[i]
     ############### get the adjacency matrix ##############
-    tmp <- signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier], 
-                                 X2 = mibi[, mibi_outlier], abar,
+    # tmp <- signed_sim_matrix_cut(X1 = filtered_rlog[, filtered_outlier], 
+    #                              X2 = mibi[, mibi_outlier], abar,
+    #                              modules, edgecut = edge_cut)
+    tmp <- signed_sim_matrix_cut(X1 , 
+                                 X2 , abar,
                                  modules, edgecut = edge_cut)
     adj_cut[[i]] <- tmp
     ############### get feature levels  ##############
-    tmp2 <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
-                                  X2 = mibi[, mibi_outlier], tmp)
+    tmp2 <- levels_mo_feature_mat(X1 ,
+                                  X2 , tmp)
     features_cut[[i]] <- tmp2
     ######## pearson correlation against sCD14 ##########
     
@@ -353,6 +356,43 @@ corr_against_Y <- function(abar, modules, X1, X2, Y, run, n_strong_modules, dir,
              file = paste0(dir, run, "PC1_against_Pheno.xlsx"))
   
 }
+
+############## correlation of the 0.1 strong module against phenotypes #########
+pc1_other_trait <- function(abar, modules, X1, X2, run, trait_df,
+                            dir, edge_cut){
+  message("Please load the abar, modules and Ws first, this one needs the Y!")
+  message(run)
+  message("Check the dimension of microbiome dataset: ")
+  p1 <-  ncol(X1); p2 <-  ncol(X2); X2 %>% ncol() %>% print()
+  # number of feature
+  ####3 check datasets
+  if( (dim(abar)[1] == (p1 + p2) ) ) 
+  {message("We are good to go!")} else 
+  { message("Wrong Datasets (X1 X2 dimensions not match with ones used in SmCCNet)!") }
+  ########## correlation against the pheotype ###########
+  # adj_cut <- vector("list", length(edges))
+  # features_cut <- vector("list", length(edges))
+  ########3 the adjacency matrix ###########
+  tmp <- signed_sim_matrix_cut(X1 , 
+                               X2 , abar,
+                               modules, edgecut = edge_cut)
+  ############### get feature levels  ##############
+  tmp2 <- levels_mo_feature_mat(X1 = filtered_rlog[, filtered_outlier],
+                                X2 = mibi[, mibi_outlier], tmp)
+  ###### check the dimension of the feature #######
+  # tmp2 %>% 
+  #   ###### non-zero list #######
+  # keep(., negate(is_empty)) %>% as.data.frame() %>% dim()
+  pc1 = get_pc1_listfeature(tmp2) %>% unlist
+  ######## correlation test against other traits######
+  corre_res = cor_test_df(trait_df, pc1)
+  row.names(corre_res) = c("p-value", "Pearson-r")
+  corre_res %<>% t()
+  write.xlsx(corre_res,  
+             file = paste0(dir, run, "cut", edge_cut, "_PC1_other_pheno.xlsx"), 
+             sheetName = run, row.names = TRUE) 
+  return(corre_res)
+}  
 
 ################ test run #################
 # fea_list <- levels_mo_feature(X1 = filtered_rlog[, filtered_outlier],
