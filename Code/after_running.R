@@ -95,12 +95,20 @@ corr_against_Y(abar, modules,
               run = "Genus_20_1_sCD14" ,
               n_strong_modules , dir, edges,
               Y_name = "sCD14 Levels")
+
+########Correlation against other biomarkers such#########3
+pc1_other_trait(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                X2 = mibi[, mibi_outlier], 
+                run = "Genus_20_1_sCD14" , trait_df = inflama[, 2:6],
+               dir = dir, edge_cut = 0.1) 
+
 ####### from here focus on non-zero modules #########
 ##### enrichment analysis #############
 ######33 One large figure and enrichr kegg, gene list #####
 robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                            X2 = mibi[, mibi_outlier],Y = CD14, 
-                           run = "Genus_20_1_sCD14" ,
+    
+                       run = "Genus_20_1_sCD14" ,
                            n_strong_modules , dir, fdrcut = 0.2)
 
 ######### From here, it is time to generate the network plot #########
@@ -348,6 +356,12 @@ corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]),
                X2 = mibi[, mibi_outlier], Y = Y, 
                run = run ,
                n_strong_modules , dir, edges, Y_name = "LPS Levels")
+
+############## correlation against other traits #########3
+pc1_other_trait(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                X2 = mibi[, mibi_outlier], 
+                run = "Genus_20_1_LPS" , trait_df = inflama[, 2:6],
+                dir = dir, edge_cut = 0.1) 
 ## 4
 robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                            X2 = mibi[, mibi_outlier],Y = Y, 
@@ -455,6 +469,11 @@ corr_against_Y(abar, modules, X1 = (filtered_rlog[, filtered_outlier]),
                X2 = mibi[, mibi_outlier], Y = Y, 
                run = run ,
                n_strong_modules , dir, edges, Y_name = "LTA Levels")
+############## correlation against other traits #########3
+pc1_other_trait(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
+                X2 = mibi[, mibi_outlier], 
+                run = "Genus_20_1_LTA" , trait_df = inflama[, 2:6],
+                dir = dir, edge_cut = 0.1) 
 ## 4
 robust_module_enrich_nodes(abar, modules, X1 = (filtered_rlog[, filtered_outlier]), 
                            X2 = mibi[, mibi_outlier],Y = Y, 
