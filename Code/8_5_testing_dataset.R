@@ -55,6 +55,8 @@ CRP <- clin %>% dplyr::select(CRP)
 anyNA(CRP)
 IL6 <- clin[,10] %>% as.data.frame() %>% set_colnames("IL6")
 anyNA(IL6)
+#####
+message("It turns out in meta data, 24th and 25th are the same of CD4")
 CD4_CD45 <- clin[,25] %>% as.data.frame() %>% set_colnames("CD4_CD45")
 anyNA(CD4_CD45)
 CD4_blood <- clin[,24] %>% as.data.frame() %>% set_colnames("CD4_blood")
@@ -64,7 +66,6 @@ anyNA(CD4_tissue)
 
 #######3 use them all together #########
 inflama <- cbind(ID, CRP, IL6, CD4_CD45, CD4_blood, CD4_tissue) %>% as.data.frame()
-
 ########
 n_na_LPS <- which(is.na(LPS))
 ## IFNb
