@@ -309,8 +309,8 @@ robust_module <- function(abar, modules, X1, X2, Y, run, edge_cut, dir){
 
 # ############### export to CytoScape ###########
 ######### run datasets, modules loading and cutting in 9_30_2019 #########
-cytoscapePing ()
-cytoscapeVersionInfo ()
+# cytoscapePing ()
+# cytoscapeVersionInfo ()
 
 ##  tidy WGCNA ready for cytoscape 
 tidy_wgcna_cyto <- function(wgcna_cytoscape, x1_name, x2_name){
