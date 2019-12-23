@@ -102,6 +102,8 @@ pc1_other_trait(abar, modules, X1 = (filtered_rlog[, filtered_outlier]),
                 run = "Genus_20_1_sCD14" , trait_df = inflama[, 2:6],
                dir = dir, edge_cut = 0.1) 
 
+## unlist(strsplit("Genus_20_1_sCD14", fixed = TRUE, split = "_"))
+
 ####### from here focus on non-zero modules #########
 ##### enrichment analysis #############
 ######33 One large figure and enrichr kegg, gene list #####
