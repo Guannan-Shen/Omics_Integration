@@ -391,6 +391,30 @@ pc1_other_trait <- function(abar, modules, X1, X2, run, trait_df,
   write.xlsx(corre_res,  
              file = paste0(dir, run, "cut", edge_cut, "_PC1_other_pheno.xlsx"), 
              sheetName = run, row.names = TRUE) 
+  
+  ############ generate plots ###############
+  message("Plot PC1 against phenotype!")
+  for(i in 1:ncol(trait_df)){
+    trait = trait_df[, i]
+      Y_name = colnames(trait_df)[i] 
+      df_trend = data.frame(PC1 = pc1, Y = trait)
+      p = ggplot(data = df_trend, aes(x = PC1, y = Y)) +
+        geom_point()+
+        geom_smooth(method=lm, se=FALSE, color="black") +
+        theme_bw() +
+        labs( x = paste("PC1 (features with 0.1 edge trimming) of case", run) , y = Y_name ) +
+        theme(axis.text.x = element_text(size = 16),
+              axis.text.y = element_text(size = 16),
+              axis.title.x = element_text(size = 18),
+              axis.title.y = element_text(size = 18),
+              text=element_text(family="Arial"))
+      print(p)
+      ggsave(filename = paste0(run, "PC1_vs_", Y_name, ".tiff"),device = NULL,
+             path = dir, dpi = 300, compression = "lzw" )
+      
+  }
+  
+  
   return(corre_res)
 }  
 
